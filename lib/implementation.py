@@ -1,6 +1,17 @@
 import numpy as np
 
 def gamma_distance(lat_long_x, lat_long_y):
+    """
+    Compute the as-the-crow-flies distance between two points on the Earth's surface.
+
+    Parameters
+    ----------
+    lat_long_x : tuple
+        The latitude and longitude of the first point
+    lat_long_y : tuple
+        The latitude and longitude of the second point
+    """
+
     lat_x, long_x = lat_long_x
     lat_y, long_y = lat_long_y
     r = 6365.079
@@ -20,6 +31,7 @@ def N_j(j, initial_times, t):
     t : float
         The time at which the number of events is computed
     """
+
     initial_times_j = initial_times[j,:]
 
     return np.sum(initial_times_j <= t)
@@ -37,6 +49,7 @@ def N_j_prime(j, arrival_times, t):
     t : float
         The time at which the number of events is computed
     """
+
     arrival_times_j = arrival_times[j,:]
 
     return np.sum(arrival_times_j <= t)

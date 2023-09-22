@@ -97,9 +97,36 @@ def compensator(i, t_compensator, initial_times, arrival_times, lams, kappa, kap
 
 def CIF(i, k, initial_times, arrival_times, lams, kappa, kappa_prime, alphas, betas, alpha_primes, beta_primes, gamma_matrix):
     """
-    Compute the conditional intensity function when the intensity kernel is exponential
+    Compute the conditional intensity function when the intensity kernel is exponential at the time of event k at station i.
+
+    Parameters
+    ----------
+    i : int
+        The index of the station
+    k : int
+        The index of the event
+    initial_times: np.array
+        The vector of initial times for all stations
+    arrival_times : np.array
+        The vector of arrival times for all stations
+    lambdas : np.array
+        The vector of lambdas
+    kappa : function
+        The kernel function
+    kappa_prime : function
+        The second kernel function
+    alphas : np.array
+        The vector of alpha parameters
+    betas : np.array
+        The vector of beta parameters
+    alpha_primes : np.array
+        The vector of alpha prime parameters
+    beta_primes : np.array
+        The vector of beta prime parameters
+    gamma_matrix : np.array
+        The matrix of gamma distances
     """
-    t_ik = initial_times[i, k]
+
     lam_i = lams[i]
     alpha_i = alphas[i]
     beta_i = betas[i]

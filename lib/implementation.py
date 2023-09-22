@@ -24,7 +24,7 @@ def N_j(j, initial_times, t):
 
     return np.sum(initial_times_j <= t)
 
-def N_prime(j, arrival_times, t):
+def N_j_prime(j, arrival_times, t):
     """
     Compute the number of events that have ended prior to time t for station j.
 
@@ -90,7 +90,7 @@ def compensator(i, t_compensator, initial_times, arrival_times, lams, kappa, kap
         for k in range(N_j(j, initial_times, t_compensator)):
             summation_one += np.exp(-beta_i*(t_compensator-initial_times[j, k])) - 1
 
-        for h in range(N_prime(arrival_times, t_compensator)):
+        for h in range(N_j_prime(arrival_times, t_compensator)):
             summation_two += np.exp(-beta_prime_i*(t_compensator-arrival_times[h, k])) - 1
 
     return lam_i*t_compensator + multiplicative_term_one*summation_one + multiplicative_term_two*summation_two
@@ -125,12 +125,12 @@ def CIF(i, k, initial_times, arrival_times, lams, kappa, kappa_prime, alphas, be
     def A_prime(j, k):
         if k==1:
             summation = 0
-            for l in range(N_prime(j, arrival_times, initial_times[i, 1])):
+            for l in range(N_j_prime(j, arrival_times, initial_times[i, 1])):
                 summation += np.exp(-beta_i*(initial_times[i, 1]-arrival_times[j, l]))
             return summation
         else:
             second_term = 0
-            for l in range(N_prime(j, arrival_times, initial_times[i, k-1] + 1, N_prime(j, arrival_times, initial_times[i, k]) + 1)):
+            for l in range(N_j_prime(j, arrival_times, initial_times[i, k-1] + 1, N_j_prime(j, arrival_times, initial_times[i, k]) + 1)):
                 second_term += np.exp(-beta_i*(initial_times[i, k]-arrival_times[j, l]))
 
             return A_prime(j, k-1)*np.exp(-beta_prime_i*(initial_times[i, k]-initial_times[i, k-1])) + second_term 

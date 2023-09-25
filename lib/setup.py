@@ -1,14 +1,13 @@
 from setuptools import setup
 
 setup(
-	name="recsys",
+	name="gb_mep",
 	version="0.1",
 	packages=[
-		"recsys",
+		"gb_mep",
 	],
 	install_requires=[
 		"numpy",
-		"scipy",
-		"numba",
+		"scipy"
 	],
 )

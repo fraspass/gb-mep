@@ -8,6 +8,12 @@ setup(
 	],
 	install_requires=[
 		"numpy",
-		"scipy"
+		"scipy",
+		"glob",
+        "datetime",
+        "pandas",
+        "sklearn",
+        "math",
+        "pickle"
 	],
 )

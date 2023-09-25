@@ -1,4 +1,6 @@
 data/training
 data/test
+data/santander_t*.csv
+data/santander_d*
 */.DS_Store
 .DS_Store

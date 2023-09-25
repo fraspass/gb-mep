@@ -1,3 +1,4 @@
-/data/*
+data/training
+data/test
 */.DS_Store
 .DS_Store

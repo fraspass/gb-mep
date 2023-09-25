@@ -1,4 +1,5 @@
-# library_template
+# GB-MEP: Graph-based mutually exciting point processes
+
 Template for a python library
 
 This repository contains a template for a python library.

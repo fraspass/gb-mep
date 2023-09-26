@@ -32,15 +32,16 @@ class gb_mep:
         self.T = int(np.ceil(np.max(self.df[['start_time','end_time']].values)))
 
     ###
-    def fit(self, start_times=True, end_times=True, distance_start=True, distance_end=False):
+    def fit(self, thresh=1, start_times=True, end_times=True, distance_start=True, distance_end=False):
         res = {}
         for node in self.nodes:
             print('\r', node, '-', self.id_map[node], ' '*20, end='\r')
+            ds = self.distance_matrix[node]
             # Recursion
-            for secondary_node in self.nodes:
+            time_diffs_A = {}; time_diffs_A_prime = {}
+            for secondary_node in np.where(ds < thresh)[0]:
                 start_breaks = np.searchsorted(a=self.start_times[secondary_node], v=self.start_times[node], side='left')
                 end_breaks = np.searchsorted(a=self.end_times[secondary_node], v=self.start_times[node], side='left')
-                time_diffs_A = {}; time_diffs_A_prime = {}
                 for k, t in enumerate(self.start_times[node]):
                     if k != 0:
                         time_diffs_A[k, secondary_node] = t - self.start_times[secondary_node][start_breaks[k-1]:start_breaks[k]]
@@ -48,16 +49,17 @@ class gb_mep:
                     else:
                         time_diffs_A[k, secondary_node] = t - self.start_times[secondary_node][:start_breaks[k]]
                         time_diffs_A_prime[k, secondary_node] = t - self.end_times[secondary_node][:end_breaks[k]]
-            res[node] = minimize(fun=self.negative_loglikelihood_full, x0=np.array([np.log(k+1/self.T), -1.0, -2.0, -1.0, -1.0, -2.0, 0.0]),
-                                    args=(node, time_diffs_A, time_diffs_A_prime)
+            res[node] = minimize(fun=self.negative_loglikelihood_full, x0=np.array([np.log((k+1)/self.T), -1.0, -2.0, -1.0, -1.0, -2.0, 0.0]),
+                                    args=(node, time_diffs_A, time_diffs_A_prime, np.where(ds < thresh)[0]))
         return res
 
     ### Calculate negative log-likelihood for the full model, for a specific node index
-    def negative_loglikelihood_full(self, params, node_index, time_diffs_A, time_diffs_A_prime):
+    def negative_loglikelihood_full(self, p, node_index, time_diffs_A, time_diffs_A_prime, subset_nodes):
         # Transform parameters to original scale (lambda, alpha, beta, theta, alpha_prime, beta_prime, theta_prime)
-        params = np.exp(params)
-        params[2] += params[1]
-        params[5] += params[4]
+        params = np.exp(p)
+        params[2] += p[1]
+        params[5] += p[4]
+        print(params)
         # Time differences for starting times for node with corresponding index
         time_diffs = np.diff(self.start_times[node_index])
         # Pre-define arrays for the recursive terms (A and A_prime)
@@ -68,14 +70,14 @@ class gb_mep:
         # Compensator component of loglikelihood
         ll = -params[0] * self.T
         # Loop over all nodes
-        for node in self.nodes:
+        for node in subset_nodes:
             # Compensator components of loglikelihood
-            ll -= np.exp(-params[3] * ds[node]) * params[1] / params[2] * np.sum(np.exp(-params[2] * (self.T - self.start_times[node]) - 1))
-            ll -= np.exp(-params[6] * ds[node]) * params[4] / params[5] * np.sum(np.exp(-params[5] * (self.T - self.end_times[node]) - 1))
+            ll += np.exp(-params[3] * ds[node]) * params[1] / params[2] * np.sum(np.exp(-params[2] * (self.T - self.start_times[node])) - 1)
+            ll += np.exp(-params[6] * ds[node]) * params[4] / params[5] * np.sum(np.exp(-params[5] * (self.T - self.end_times[node])) - 1)
             # Loop over all events and update recursive terms A and A_prime
             for k, _ in enumerate(self.start_times[node_index]):    
-                A[k,node] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1,node]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node])) 
-                A_prime[k,node] = ((np.exp(-params[5] * time_diffs[k-1]) * A_prime[k-1,node]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A_prime[k, node])) 
+                A[k, node] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1, node]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node])) 
+                A_prime[k, node] = ((np.exp(-params[5] * time_diffs[k-1]) * A_prime[k-1, node]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A_prime[k, node])) 
         # Calculate B and use it to update the log-likelihood
         B = np.exp(-params[3] * ds) * params[1] * A + np.exp(-params[6] * ds) * params[4] * A 
         ll += np.sum(np.log(params[0] + B.sum(axis=1)))

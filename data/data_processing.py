@@ -59,7 +59,7 @@ df['end_time'] = df['End Date'].transform(lambda x: datefy(x, start_date=start_d
 # - Sort by start time
 df = df.sort_values(by='start_time')
 # - Save the resulting DataFrame
-df.to_csv('santander_train.csv', sep=',', columns=None, header=True, index=False)
+df[['start_id','end_id','start_time','end_time']].to_csv('santander_train.csv', sep=',', columns=None, header=True, index=False)
 
 ## Preprocess all test data files
 # - Obtain all file names for test data
@@ -97,7 +97,7 @@ for file in files:
 # - Concatenate all DataFrames into a unique DF, and sort by start time
 df_test = pd.concat(list_dfs, axis=0, ignore_index=True).sort_values(by='start_time')
 # - Save the resulting DataFrame
-df_test.to_csv('santander_test.csv', sep=',', columns=None, header=True, index=False)
+df_test[['start_id','end_id','start_time','end_time']].to_csv('santander_test.csv', sep=',', columns=None, header=True, index=False)
 # - Delete list of dataframes
 del list_dfs
 

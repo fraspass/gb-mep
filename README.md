@@ -18,10 +18,10 @@ The Santander Cycles data could be downloaded from the [TfL Cycling Data Reposit
 cd data
 bash get_data.sh
 ```
-After the data has been downloaded, it can be preprocessed via the script `data_process.py` in the directory `data`, as follows:
+After the data has been downloaded, it can be preprocessed via the script `data_processing.py` in the directory `data`, as follows:
 ```
 cd data
-python3 data_process.py
+python3 data_processing.py
 ```
 If the library `gb_mep` has been installed as described above, all libraries required for the preprocessing should already be installed. The output of the script consists in four files, stored in `data`:
 - `santander_training.csv`, containing a preprocessed DataFrame with the training set data;

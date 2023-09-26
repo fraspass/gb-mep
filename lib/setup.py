@@ -10,10 +10,10 @@ setup(
 		"numpy",
 		"scipy",
 		"glob",
-        "datetime",
-        "pandas",
-        "sklearn",
-        "math",
-        "pickle"
+		"datetime",
+		"pandas",
+		"sklearn",
+		"math",
+		"pickle"
 	],
 )

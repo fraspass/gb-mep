@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import numpy as np
-from collections import Counter
+from scipy.optimize import minimize
 
 #####################################################
 ### Graph-based mutually exciting point processes ###
@@ -21,25 +21,25 @@ class gb_mep:
             # For each node, find all start times and end times
             self.start_times = {}
             self.end_times = {}
-            for node in df.nodes:
-                self.start_times[node] = np.array(self.df['start_time'][self.df['start_id'] == node].sort_values(by='start_time'))
-                self.end_times[node] = np.array(self.df['end_time'][self.df['end_id'] == node].sort_values(by='end_time'))
+            for node in self.nodes:
+                self.start_times[node] = np.array(self.df['start_time'][self.df['start_id'] == node].sort_values())
+                self.end_times[node] = np.array(self.df['end_time'][self.df['end_id'] == node].sort_values())
         # Define dictionary with map from ID to names and vice-versa
         self.id_map = id_map
         # Define distance matrix
         self.distance_matrix = distance_matrix
         self.M = self.distance_matrix.shape[0]
-        self.T = int(np.ceiling(np.max(self.df[['start_time','end_time']].values)))
+        self.T = int(np.ceil(np.max(self.df[['start_time','end_time']].values)))
 
     ###
     def fit(self, start_times=True, end_times=True, distance_start=True, distance_end=False):
+        res = {}
         for node in self.nodes:
-            print('\r', self.id_map[node], '-', self.df.id_map[self.id_map[node]], end='\r')
+            print('\r', node, '-', self.id_map[node], ' '*20, end='\r')
             # Recursion
-            start_breaks = {}; end_breaks = {}
             for secondary_node in self.nodes:
                 start_breaks = np.searchsorted(a=self.start_times[secondary_node], v=self.start_times[node], side='left')
-                end_breaks = np.searchsorted(a=self.end_times[secondary_node], v=self.end_times[node], side='left')
+                end_breaks = np.searchsorted(a=self.end_times[secondary_node], v=self.start_times[node], side='left')
                 time_diffs_A = {}; time_diffs_A_prime = {}
                 for k, t in enumerate(self.start_times[node]):
                     if k != 0:
@@ -48,7 +48,10 @@ class gb_mep:
                     else:
                         time_diffs_A[k, secondary_node] = t - self.start_times[secondary_node][:start_breaks[k]]
                         time_diffs_A_prime[k, secondary_node] = t - self.end_times[secondary_node][:end_breaks[k]]
-    
+            res[node] = minimize(fun=self.negative_loglikelihood_full, x0=np.array([np.log(k+1/self.T), -1.0, -2.0, -1.0, -1.0, -2.0, 0.0]),
+                                    args=(node, time_diffs_A, time_diffs_A_prime)
+        return res
+
     ### Calculate negative log-likelihood for the full model, for a specific node index
     def negative_loglikelihood_full(self, params, node_index, time_diffs_A, time_diffs_A_prime):
         # Transform parameters to original scale (lambda, alpha, beta, theta, alpha_prime, beta_prime, theta_prime)

@@ -9,11 +9,8 @@ setup(
 	install_requires=[
 		"numpy",
 		"scipy",
-		"glob",
 		"datetime",
 		"pandas",
-		"sklearn",
-		"math",
-		"pickle"
+		"scikit-learn",
 	],
 )

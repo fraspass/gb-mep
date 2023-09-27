@@ -31,15 +31,23 @@ class gb_mep:
         self.M = self.distance_matrix.shape[0]
         self.T = int(np.ceil(np.max(self.df[['start_time','end_time']].values)))
 
-    ###
-    def fit(self, thresh=1, start_times=True, end_times=True, distance_start=True, distance_end=False):
+    ### Fit the model to a subset of nodes
+    def fit(self, x0, subset_nodes=None, start_times=True, end_times=True, distance_start=True, distance_end=False, thresh=1):
+        # Define the dictionary for results
         res = {}
-        for node in self.nodes:
+        # If the subset of nodes is not specified, consider all nodes
+        if subset_nodes is None:
+            subset_nodes = self.nodes
+        # Loop over all nodes in the subset
+        for node in subset_nodes:
+            # Print node and name
             print('\r', node, '-', self.id_map[node], ' '*20, end='\r')
-            ds = self.distance_matrix[node]
-            # Recursion
+            # Obtain distances if required
+            if distance_start or distance_end:
+                ds = self.distance_matrix[node]
+            # Calculate required elements for recursion
             time_diffs_A = {}; time_diffs_A_prime = {}
-            for secondary_node in np.where(ds < thresh)[0]:
+            for secondary_node in ([node] if not (distance_start or distance_end) else np.where(ds < thresh)[0]):
                 start_breaks = np.searchsorted(a=self.start_times[secondary_node], v=self.start_times[node], side='left')
                 end_breaks = np.searchsorted(a=self.end_times[secondary_node], v=self.start_times[node], side='left')
                 for k, t in enumerate(self.start_times[node]):
@@ -49,9 +57,143 @@ class gb_mep:
                     else:
                         time_diffs_A[k, secondary_node] = t - self.start_times[secondary_node][:start_breaks[k]]
                         time_diffs_A_prime[k, secondary_node] = t - self.end_times[secondary_node][:end_breaks[k]]
-            res[node] = minimize(fun=self.negative_loglikelihood_full, x0=np.array([np.log((k+1)/self.T), -1.0, -2.0, -1.0, -1.0, -2.0, 0.0]),
-                                    args=(node, time_diffs_A, time_diffs_A_prime, np.where(ds < thresh)[0]))
+            # Obtain the correct log-likelihood function based on fitting parameters
+            if start_times and end_times and distance_start and distance_end:
+                f = self.negative_loglikelihood_full
+                f_args = (node, time_diffs_A, time_diffs_A_prime, np.where(ds < thresh)[0])
+            elif start_times and end_times and distance_start and not distance_end:
+                f = self.negative_loglikelihood_full_start
+                f_args = (node, time_diffs_A, time_diffs_A_prime, np.where(ds < thresh)[0])
+            elif start_times and end_times and not distance_start and not distance_end:
+                f = self.negative_loglikelihood_smep
+                f_args = (node, time_diffs_A, time_diffs_A_prime)
+            elif start_times and not end_times:
+                f = self.negative_loglikelihood_sep
+                f_args = (node, time_diffs_A)
+            elif not start_times and end_times:
+                f = self.negative_loglikelihood_mep
+                f_args = (node, time_diffs_A_prime)
+            elif not start_times and not end_times:
+                f = 'Poisson'
+            else:
+                return ValueError('The chosen combination of start_times, end_times, distance_start and distance_end is not supported by this library.')
+            # Minimise negative log-likelihood, or obtain exact solution if the function is simply the Poisson process
+            if f == 'Poisson':
+                res[node] = len(self.start_times[node]) / self.T
+            else:
+                res[node] = minimize(fun=f, x0=x0, args=f_args)
         return res
+
+    ### Calculate negative log-likelihood for the self-exciting model, for a specific node index
+    def negative_loglikelihood_sep(self, p, node_index, time_diffs_A):
+        # Transform parameters to original scale (lambda, alpha, beta)
+        params = np.exp(p)
+        params[2] += p[1]
+        print(params)
+        # Time differences for starting times for node with corresponding index
+        time_diffs = np.diff(self.start_times[node_index])
+        # Pre-define arrays for the recursive terms (A)
+        A = np.zeros(len(time_diffs)+1)
+        # Obtain distance between node and all other nodes
+        ds = self.distance_matrix[node_index]
+        # Compensator component of loglikelihood
+        ll = -params[0] * self.T
+        # Compensator components of loglikelihood
+        ll += params[1] / params[2] * np.sum(np.exp(-params[2] * (self.T - self.start_times[node_index])) - 1)
+        # Loop over all events and update recursive term A
+        for k, _ in enumerate(self.start_times[node_index]):    
+            A[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1, node_index]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node_index]))
+        # Calculate B and use it to update the log-likelihood
+        B = params[1] * A
+        ll += np.sum(np.log(params[0] + B.sum(axis=1)))
+        # Return final value
+        return -ll
+
+    ### Calculate negative log-likelihood for the mutually exciting model, for a specific node index
+    def negative_loglikelihood_mep(self, p, node_index, time_diffs_A_prime):
+        # Transform parameters to original scale (lambda, alpha_prime, beta_prime)
+        params = np.exp(p)
+        params[2] += p[1]
+        print(params)
+        # Time differences for starting times for node with corresponding index
+        time_diffs = np.diff(self.start_times[node_index])
+        # Pre-define arrays for the recursive terms (A_prime)
+        A_prime = np.zeros(len(time_diffs)+1)
+        # Obtain distance between node and all other nodes
+        ds = self.distance_matrix[node_index]
+        # Compensator component of loglikelihood
+        ll = -params[0] * self.T
+        # Compensator components of loglikelihood
+        ll += params[1] / params[2] * np.sum(np.exp(-params[2] * (self.T - self.end_times[node_index])) - 1)
+        # Loop over all events and update recursive term A_prime
+        for k, _ in enumerate(self.start_times[node_index]):    
+            A_prime[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A_prime[k-1, node_index]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A_prime[k, node_index])) 
+        # Calculate B and use it to update the log-likelihood
+        B = params[1] * A_prime
+        ll += np.sum(np.log(params[0] + B.sum(axis=1)))
+        # Return final value
+        return -ll
+
+    ### Calculate negative log-likelihood for the self-and-mutually exciting model, for a specific node index
+    def negative_loglikelihood_smep(self, p, node_index, time_diffs_A, time_diffs_A_prime):
+        # Transform parameters to original scale (lambda, alpha, beta, alpha_prime, beta_prime)
+        params = np.exp(p)
+        params[2] += p[1]
+        params[4] += p[3]
+        print(params)
+        # Time differences for starting times for node with corresponding index
+        time_diffs = np.diff(self.start_times[node_index])
+        # Pre-define arrays for the recursive terms (A and A_prime)
+        A = np.zeros(len(time_diffs)+1)
+        A_prime = np.zeros(len(time_diffs)+1)
+        # Obtain distance between node and all other nodes
+        ds = self.distance_matrix[node_index]
+        # Compensator component of loglikelihood
+        ll = -params[0] * self.T
+        # Compensator components of loglikelihood
+        ll += params[1] / params[2] * np.sum(np.exp(-params[2] * (self.T - self.start_times[node_index])) - 1)
+        ll += params[3] / params[4] * np.sum(np.exp(-params[4] * (self.T - self.end_times[node_index])) - 1)
+        # Loop over all events and update recursive terms A and A_prime
+        for k, _ in enumerate(self.start_times[node_index]):    
+            A[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1, node_index]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node_index])) 
+            A_prime[k] = ((np.exp(-params[4] * time_diffs[k-1]) * A_prime[k-1, node_index]) if k > 0 else 0) + np.sum(np.exp(-params[4] * time_diffs_A_prime[k, node_index])) 
+        # Calculate B and use it to update the log-likelihood
+        B = params[1] * A + params[3] * A_prime
+        ll += np.sum(np.log(params[0] + B.sum(axis=1)))
+        # Return final value
+        return -ll
+
+    ### Calculate negative log-likelihood for the full model without a distance function for the end times, for a specific node index
+    def negative_loglikelihood_full_start(self, p, node_index, time_diffs_A, time_diffs_A_prime, subset_nodes):
+        # Transform parameters to original scale (lambda, alpha, beta, theta, alpha_prime, beta_prime, theta_prime)
+        params = np.exp(p)
+        params[2] += p[1]
+        params[5] += p[4]
+        print(params)
+        # Time differences for starting times for node with corresponding index
+        time_diffs = np.diff(self.start_times[node_index])
+        # Pre-define arrays for the recursive terms (A and A_prime)
+        A = np.zeros((len(time_diffs)+1,self.M))
+        A_prime = np.zeros((len(time_diffs)+1,self.M))
+        # Obtain distance between node and all other nodes
+        ds = self.distance_matrix[node_index]
+        # Compensator component of loglikelihood
+        ll = -params[0] * self.T
+        # Loop over all nodes
+        for node in subset_nodes:
+            # Compensator components of loglikelihood
+            ll += np.exp(-params[3] * ds[node]) * params[1] / params[2] * np.sum(np.exp(-params[2] * (self.T - self.start_times[node])) - 1)
+            ll += np.exp(-params[6] * ds[node]) * params[4] / params[5] * np.sum(np.exp(-params[5] * (self.T - self.end_times[node])) - 1)
+            # Loop over all events and update recursive terms A and A_prime
+            for k, _ in enumerate(self.start_times[node_index]):    
+                A[k, node] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1, node]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node]))
+                if node == node_index:
+                    A_prime[k, node] = ((np.exp(-params[5] * time_diffs[k-1]) * A_prime[k-1, node]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A_prime[k, node])) 
+        # Calculate B and use it to update the log-likelihood
+        B = np.exp(-params[3] * ds) * params[1] * A + params[4] * A_prime
+        ll += np.sum(np.log(params[0] + B.sum(axis=1)))
+        # Return final value
+        return -ll
 
     ### Calculate negative log-likelihood for the full model, for a specific node index
     def negative_loglikelihood_full(self, p, node_index, time_diffs_A, time_diffs_A_prime, subset_nodes):
@@ -79,7 +221,7 @@ class gb_mep:
                 A[k, node] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1, node]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node])) 
                 A_prime[k, node] = ((np.exp(-params[5] * time_diffs[k-1]) * A_prime[k-1, node]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A_prime[k, node])) 
         # Calculate B and use it to update the log-likelihood
-        B = np.exp(-params[3] * ds) * params[1] * A + np.exp(-params[6] * ds) * params[4] * A 
+        B = np.exp(-params[3] * ds) * params[1] * A + np.exp(-params[6] * ds) * params[4] * A_prime
         ll += np.sum(np.log(params[0] + B.sum(axis=1)))
         # Return final value
         return -ll

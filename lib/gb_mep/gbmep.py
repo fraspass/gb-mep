@@ -63,7 +63,7 @@ class gb_mep:
                         start_breaks = np.searchsorted(a=self.start_times[secondary_node], v=self.start_times[node], side='left')
                         end_breaks = np.searchsorted(a=self.end_times[secondary_node], v=self.start_times[node], side='left')
                         for k, t in enumerate(self.start_times[node]):
-                            if k != 0:
+                            if k > 0:
                                 time_diffs_A[k, secondary_node] = t - self.start_times[secondary_node][start_breaks[k-1]:start_breaks[k]]
                                 time_diffs_A_prime[k, secondary_node] = t - self.end_times[secondary_node][end_breaks[k-1]:end_breaks[k]]
                             else:
@@ -85,7 +85,7 @@ class gb_mep:
                 f_args = (node, time_diffs_A, time_diffs_A_prime)
             elif start_times and not end_times:
                 f = self.negative_loglikelihood_sep
-                f_args = (node, time_diffs_A)
+                f_args = (node)
             elif not start_times and end_times:
                 f = self.negative_loglikelihood_mep
                 f_args = (node, time_diffs_A_prime)
@@ -95,13 +95,13 @@ class gb_mep:
                 return ValueError('The chosen combination of start_times, end_times, distance_start and distance_end is not supported by this library.')
             # Minimise negative log-likelihood, or obtain exact solution if the function is simply the Poisson process
             if f == 'Poisson':
-                res[node] = len(self.start_times[node]) / self.T
+                res[node] = np.log(len(self.start_times[node]) / self.T)
             else:
-                res[node] = minimize(fun=f, x0=x0, args=f_args)
+                res[node] = minimize(fun=f, x0=x0, args=f_args, method='L-BFGS-B')
         return res
 
     ### Calculate negative log-likelihood for the self-exciting model, for a specific node index
-    def negative_loglikelihood_sep(self, p, node_index, time_diffs_A):
+    def negative_loglikelihood_sep(self, p, node_index):
         # Transform parameters to original scale (lambda, alpha, beta)
         params = np.exp(p)
         params[2] += params[1]
@@ -114,11 +114,11 @@ class gb_mep:
         # Compensator components of loglikelihood
         ll += params[1] / params[2] * np.sum(np.exp(-params[2] * (self.T - self.start_times[node_index])) - 1)
         # Loop over all events and update recursive term A
-        for k, _ in enumerate(self.start_times[node_index]):    
-            A[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node_index]))
+        for k, _ in enumerate(self.start_times[node_index]):
+            A[k] = np.exp(-params[2] * time_diffs[k-1]) * ((A[k-1] + 1) if k > 0 else 0)
         # Calculate B and use it to update the log-likelihood
         B = params[1] * A
-        ll += np.sum(np.log(params[0] + B.sum()))
+        ll += np.sum(np.log(params[0] + B))
         # Return final value
         return -ll
 
@@ -140,7 +140,7 @@ class gb_mep:
             A_prime[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A_prime[k, node_index])) 
         # Calculate B and use it to update the log-likelihood
         B = params[1] * A_prime
-        ll += np.sum(np.log(params[0] + B.sum()))
+        ll += np.sum(np.log(params[0] + B))
         # Return final value
         return -ll
 
@@ -166,7 +166,7 @@ class gb_mep:
             A_prime[k] = ((np.exp(-params[4] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[4] * time_diffs_A_prime[k, node_index])) 
         # Calculate B and use it to update the log-likelihood
         B = params[1] * A + params[3] * A_prime
-        ll += np.sum(np.log(params[0] + B.sum()))
+        ll += np.sum(np.log(params[0] + B))
         # Return final value
         return -ll
 
@@ -233,6 +233,7 @@ class gb_mep:
 
     ## Calculate p-values for Poisson process
     def pvals_poisson_process(self, param, node_index):
+        # Calculate p-values
         return np.exp(-param * np.insert(arr=np.diff(self.start_times[node_index]), obj=0, values=self.start_times[node_index][0]))
 
     ## Calculate p-values for self-exciting process
@@ -244,5 +245,46 @@ class gb_mep:
         # Loop over all events and update recursive term A
         for k, _ in enumerate(self.start_times[node_index]):    
             A[k] = np.exp(-params[2] * time_diffs[k-1]) * ((A[k-1] if k > 0 else 0) + 1)
-        # Calculate B and use it to update the log-likelihood
+        # Calculate p-values
         return np.exp(-params[0] * np.insert(arr=time_diffs, obj=0, values=self.start_times[node_index][0]) + params[1] / params[2] * np.insert(arr=np.diff(A)-1, obj=0, values=A[0]))
+    
+    ## Calculate p-values for mutually exciting process
+    def pvals_mep(self, params, node_index):
+        # Time differences for starting times for node with corresponding index
+        time_diffs = np.diff(self.start_times[node_index])
+        # Pre-define arrays for the recursive terms (A_prime)
+        A_prime = np.zeros(len(time_diffs)+1)
+        # Counting process N_i^prime evaluated at all start times
+        end_breaks = np.searchsorted(a=self.end_times[node_index], v=self.start_times[node_index], side='left')
+        end_breaks_diff = np.insert(arr=np.diff(end_breaks), obj=0, values=end_breaks[0])
+        # Loop over all events and update recursive terms A and A_prime
+        for k, t in enumerate(self.start_times[node_index]):
+            if k > 0:
+                t_primes = t - self.end_times[node_index][end_breaks[k-1]:end_breaks[k]]
+            else:
+                t_primes = t - self.end_times[node_index][:end_breaks[k]]
+            A_prime[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[2] * t_primes)) 
+        # Calculate p-values
+        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=self.start_times[node_index][0])
+        return np.exp(baseline_terms + params[1] / params[2] * (np.insert(arr=np.diff(A_prime), obj=0, values=A_prime[0]) - end_breaks_diff))
+    
+    ## Calculate p-values for self-and-mutually exciting process
+    def pvals_smep(self, params, node_index):
+        # Time differences for starting times for node with corresponding index
+        time_diffs = np.diff(self.start_times[node_index])
+        # Pre-define arrays for the recursive terms (A and A_prime)
+        A = np.zeros(len(time_diffs)+1)
+        A_prime = np.zeros(len(A))
+        ## Counting process N_i^prime evaluated at all start times
+        end_breaks = np.searchsorted(a=self.end_times[node_index], v=self.start_times[node_index], side='left')
+        end_breaks_diff = np.insert(arr=np.diff(end_breaks), obj=0, values=end_breaks[0])
+        # Loop over all events and update recursive term A and A_prime
+        for k, t in enumerate(self.start_times[node_index]):
+            t_primes = t - self.end_times[node_index][end_breaks[k-1]:end_breaks[k]]    
+            A[k] = np.exp(-params[2] * time_diffs[k-1]) * ((A[k-1] if k > 0 else 0) + 1)
+            A_prime[k] = ((np.exp(-params[4] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[4] * t_primes)) 
+        # Calculate p-values
+        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=self.start_times[node_index][0])
+        A_terms = params[1] / params[2] * np.insert(arr=np.diff(A)-1, obj=0, values=A[0])
+        A_prime_terms = params[3] / params[4] * (np.insert(arr=np.diff(A_prime), obj=0, values=A_prime[0]) - end_breaks_diff)
+        return np.exp(baseline_terms + A_terms + A_prime_terms)

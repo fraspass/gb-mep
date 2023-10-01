@@ -70,11 +70,14 @@ class gb_mep:
                             time_diffs_A_prime[k, secondary_node] = t - self.end_times[secondary_node][:end_breaks[k]]
             # Obtain the correct log-likelihood function based on fitting parameters
             if start_times and end_times and distance_start and distance_end:
-                f = self.negative_loglikelihood_full
+                f = self.negative_loglikelihood_gbmep
                 f_args = (node, time_diffs_A, time_diffs_A_prime, thresh)
             elif start_times and end_times and distance_start and not distance_end:
-                f = self.negative_loglikelihood_full_start
+                f = self.negative_loglikelihood_gbmep_start_self
                 f_args = (node, time_diffs_A, time_diffs_A_prime, thresh)
+            elif start_times and not end_times and distance_start:
+                f = self.negative_loglikelihood_gbmep_start
+                f_args = (node, time_diffs_A, thresh)
             elif start_times and end_times and not distance_start and not distance_end:
                 f = self.negative_loglikelihood_smep
                 f_args = (node, time_diffs_A, time_diffs_A_prime)
@@ -166,8 +169,38 @@ class gb_mep:
         return -ll
 
     ### Calculate negative log-likelihood for the full model without a distance function for the end times, for a specific node index
-    def negative_loglikelihood_full_start(self, p, node_index, time_diffs_A, time_diffs_A_prime, thresh=1):
-        # Transform parameters to original scale (lambda, alpha, beta, theta, alpha_prime, beta_prime, theta_prime)
+    def negative_loglikelihood_gbmep_start(self, p, node_index, time_diffs_A, thresh=1):
+        # Transform parameters to original scale (lambda, alpha, beta, theta)
+        params = np.exp(p)
+        params[2] += params[1]
+        # Time differences for starting times for node with corresponding index
+        time_diffs = np.diff(self.start_times[node_index])
+        # Obtain distance between node and all other nodes
+        ds = self.distance_matrix[node_index]
+        if thresh is None:
+            subset_nodes = self.nodes
+        else:
+            subset_nodes = np.intersect1d(ar1=self.nodes, ar2=np.where(ds < thresh)[0])
+        # Pre-define arrays for the recursive terms (A)
+        A = np.zeros((len(time_diffs)+1, len(subset_nodes)))
+        # Compensator component of loglikelihood
+        ll = -params[0] * self.T
+        # Loop over all nodes
+        for nn, node in enumerate(subset_nodes):
+            # Compensator components of loglikelihood
+            ll += np.exp(-params[3] * ds[node]) * params[1] / params[2] * np.sum(np.exp(-params[2] * (self.T - self.start_times[node])) - 1)
+            # Loop over all events and update recursive terms A and A_prime
+            for k, _ in enumerate(self.start_times[node_index]):    
+                A[k, nn] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node]))
+        # Calculate B and use it to update the log-likelihood
+        B = np.exp(-params[3] * ds[subset_nodes]) * params[1] * A
+        ll += np.sum(np.log(params[0] + B.sum(axis=1)))
+        # Return final value
+        return -ll
+    
+    ### Calculate negative log-likelihood for the full model without a distance function for the end times, for a specific node index
+    def negative_loglikelihood_gbmep_start_self(self, p, node_index, time_diffs_A, time_diffs_A_prime, thresh=1):
+        # Transform parameters to original scale (lambda, alpha, beta, theta, alpha_prime, beta_prime)
         params = np.exp(p)
         params[2] += params[1]
         params[5] += params[4]
@@ -202,7 +235,7 @@ class gb_mep:
         return -ll
 
     ### Calculate negative log-likelihood for the full model, for a specific node index
-    def negative_loglikelihood_full(self, p, node_index, time_diffs_A, time_diffs_A_prime, thresh=None):
+    def negative_loglikelihood_gbmep(self, p, node_index, time_diffs_A, time_diffs_A_prime, thresh=None):
         # Transform parameters to original scale (lambda, alpha, beta, theta, alpha_prime, beta_prime, theta_prime)
         params = np.exp(p)
         params[2] += params[1]

@@ -268,68 +268,117 @@ class gb_mep:
         # Return final value
         return -ll
 
+    ## Add test set event times to the training set event times
+    def augment_start_times(self, test_set=None):
+        # Select set of starting and ending times times
+        if test_set is not None:
+            # For each node, find all start times and end times in the test set and add them to the existing set
+            start_times = {}
+            end_times = {}
+            for node in self.nodes:
+                start_times[node] = np.concatenate((self.start_times[node], test_set['start_time'][test_set['start_id'] == node])).sort_values()
+                end_times[node] = np.concatenate((self.end_times[node], test_set['end_time'][test_set['start_id'] == node])).sort_values()     
+        else:
+            # If there is no test set, use the training set
+            start_times = self.start_times
+            end_times = self.end_times
+        return start_times, end_times
+
     ## Calculate p-values for Poisson process
-    def pvals_poisson_process(self, param, node_index):
+    def pvals_poisson_process(self, param, node_index, start_times):
         # Calculate p-values
-        return np.exp(-param * np.insert(arr=np.diff(self.start_times[node_index]), obj=0, values=self.start_times[node_index][0]))
+        pvs = np.exp(-param * np.insert(arr=np.diff(start_times[node_index]), obj=0, values=start_times[node_index][0]))
+        if self.N[node_index] == len(pvs):
+            return pvs
+        else:
+            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
 
     ## Calculate p-values for self-exciting process
-    def pvals_sep(self, params, node_index):
+    def pvals_sep(self, params, node_index, start_times=None, test_split=False):
+        if start_times is None:
+            start_times = self.start_times
         # Time differences for starting times for node with corresponding index
-        time_diffs = np.diff(self.start_times[node_index])
+        time_diffs = np.diff(start_times[node_index])
         # Pre-define arrays for the recursive terms (A)
         A = np.zeros(len(time_diffs)+1)
         # Loop over all events and update recursive term A
-        for k, _ in enumerate(self.start_times[node_index]):    
+        for k, _ in enumerate(start_times[node_index]):    
             A[k] = np.exp(-params[2] * time_diffs[k-1]) * ((A[k-1] if k > 0 else 0) + 1)
         # Calculate p-values
-        return np.exp(-params[0] * np.insert(arr=time_diffs, obj=0, values=self.start_times[node_index][0]) + params[1] / params[2] * np.insert(arr=np.diff(A)-1, obj=0, values=A[0]))
+        pvs = np.exp(-params[0] * np.insert(arr=time_diffs, obj=0, values=start_times[node_index][0]) + params[1] / params[2] * np.insert(arr=np.diff(A)-1, obj=0, values=A[0]))
+        if not test_split:
+            return pvs
+        else:
+            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
     
     ## Calculate p-values for mutually exciting process
-    def pvals_mep(self, params, node_index):
+    def pvals_mep(self, params, node_index, start_times=None, end_times=None, test_split=False):
+        if start_times is None:
+            start_times = self.start_times
+        if end_times is None:
+            end_times = self.end_times
         # Time differences for starting times for node with corresponding index
-        time_diffs = np.diff(self.start_times[node_index])
+        time_diffs = np.diff(start_times[node_index])
         # Pre-define arrays for the recursive terms (A_prime)
         A_prime = np.zeros(len(time_diffs)+1)
         # Counting process N_i^prime evaluated at all start times
-        end_breaks = np.searchsorted(a=self.end_times[node_index], v=self.start_times[node_index], side='left')
+        end_breaks = np.searchsorted(a=end_times[node_index], v=start_times[node_index], side='left')
         end_breaks_diff = np.insert(arr=np.diff(end_breaks), obj=0, values=end_breaks[0])
         # Loop over all events and update recursive terms A and A_prime
-        for k, t in enumerate(self.start_times[node_index]):
+        for k, t in enumerate(start_times[node_index]):
             if k > 0:
-                t_primes = t - self.end_times[node_index][end_breaks[k-1]:end_breaks[k]]
+                t_primes = t - end_times[node_index][end_breaks[k-1]:end_breaks[k]]
             else:
-                t_primes = t - self.end_times[node_index][:end_breaks[k]]
+                t_primes = t - end_times[node_index][:end_breaks[k]]
             A_prime[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[2] * t_primes)) 
         # Calculate p-values
-        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=self.start_times[node_index][0])
-        return np.exp(baseline_terms + params[1] / params[2] * (np.insert(arr=np.diff(A_prime), obj=0, values=A_prime[0]) - end_breaks_diff))
+        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=start_times[node_index][0])
+        pvs = np.exp(baseline_terms + params[1] / params[2] * (np.insert(arr=np.diff(A_prime), obj=0, values=A_prime[0]) - end_breaks_diff))
+        if not test_split:
+            return pvs
+        else:
+            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
     
     ## Calculate p-values for self-and-mutually exciting process
-    def pvals_smep(self, params, node_index):
+    def pvals_smep(self, params, node_index, start_times=None, end_times=None, test_split=False):
+        if start_times is None:
+            start_times = self.start_times
+        if end_times is None:
+            end_times = self.end_times
         # Time differences for starting times for node with corresponding index
-        time_diffs = np.diff(self.start_times[node_index])
+        time_diffs = np.diff(start_times[node_index])
         # Pre-define arrays for the recursive terms (A and A_prime)
         A = np.zeros(len(time_diffs)+1)
         A_prime = np.zeros(len(A))
         ## Counting process N_i^prime evaluated at all start times
-        end_breaks = np.searchsorted(a=self.end_times[node_index], v=self.start_times[node_index], side='left')
+        end_breaks = np.searchsorted(a=end_times[node_index], v=start_times[node_index], side='left')
         end_breaks_diff = np.insert(arr=np.diff(end_breaks), obj=0, values=end_breaks[0])
         # Loop over all events and update recursive term A and A_prime
-        for k, t in enumerate(self.start_times[node_index]):
-            t_primes = t - self.end_times[node_index][end_breaks[k-1]:end_breaks[k]]    
+        for k, t in enumerate(start_times[node_index]):
+            if k > 0:
+                t_primes = t - end_times[node_index][end_breaks[k-1]:end_breaks[k]] 
+            else:
+                t_primes = t - end_times[node_index][:end_breaks[k]]    
             A[k] = np.exp(-params[2] * time_diffs[k-1]) * ((A[k-1] if k > 0 else 0) + 1)
             A_prime[k] = ((np.exp(-params[4] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[4] * t_primes)) 
         # Calculate p-values
-        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=self.start_times[node_index][0])
+        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=start_times[node_index][0])
         A_terms = params[1] / params[2] * np.insert(arr=np.diff(A)-1, obj=0, values=A[0])
         A_prime_terms = params[3] / params[4] * (np.insert(arr=np.diff(A_prime), obj=0, values=A_prime[0]) - end_breaks_diff)
-        return np.exp(baseline_terms + A_terms + A_prime_terms)
+        pvs = np.exp(baseline_terms + A_terms + A_prime_terms)
+        if not test_split:
+            return pvs
+        else:
+            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
     
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start(self, params, node_index, thresh=None):
+    def pvals_gbmep_start(self, params, node_index, thresh=None, start_times=None, end_times=None, test_split=False):
+        if start_times is None:
+            start_times = self.start_times
+        if end_times is None:
+            end_times = self.end_times
         # Time differences for starting times for node with corresponding index
-        time_diffs = np.diff(self.start_times[node_index])
+        time_diffs = np.diff(start_times[node_index])
         # Pre-define arrays for the recursive terms (A)
         A = np.zeros((len(time_diffs)+1))
         # Obtain distance between node and all other nodes
@@ -340,28 +389,36 @@ class gb_mep:
         else:
             subset_nodes = np.intersect1d(ar1=self.nodes, ar2=np.where(ds < thresh)[0])
         # Calculate baseline terms for p-values
-        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=self.start_times[node_index][0])
+        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=start_times[node_index][0])
         A_terms = np.zeros(len(A))
         # Calculate required elements for recursion
         for secondary_node in subset_nodes:
-            start_breaks = np.searchsorted(a=self.start_times[secondary_node], v=self.start_times[node_index], side='left')
+            start_breaks = np.searchsorted(a=start_times[secondary_node], v=start_times[node_index], side='left')
             start_breaks_diff = np.insert(arr=np.diff(start_breaks), obj=0, values=start_breaks[0])
-            for k, t in enumerate(self.start_times[node_index]):
+            for k, t in enumerate(start_times[node_index]):
                 if k > 0:
-                    time_diffs_A = t - self.start_times[secondary_node][start_breaks[k-1]:start_breaks[k]]
+                    time_diffs_A = t - start_times[secondary_node][start_breaks[k-1]:start_breaks[k]]
                 else:
-                    time_diffs_A = t - self.start_times[secondary_node][:start_breaks[k]]
+                    time_diffs_A = t - start_times[secondary_node][:start_breaks[k]]
                 ## Update A and A_prime
                 A[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A)) 
             ## Update A and A_prime terms for calculation of differences between conpensators
             A_terms += np.exp(-params[3] * ds[secondary_node]) * params[1] / params[2] * (np.insert(arr=np.diff(A), obj=0, values=A[0]) - start_breaks_diff)
         ## Return p-values
-        return np.exp(baseline_terms + A_terms)
+        pvs = np.exp(baseline_terms + A_terms)
+        if not test_split:
+            return pvs
+        else:
+            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start_self(self, params, node_index, thresh=None):
+    def pvals_gbmep_start_self(self, params, node_index, thresh=None, start_times=None, end_times=None, test_split=False):
+        if start_times is None:
+            start_times = self.start_times
+        if end_times is None:
+            end_times = self.end_times
         # Time differences for starting times for node with corresponding index
-        time_diffs = np.diff(self.start_times[node_index])
+        time_diffs = np.diff(start_times[node_index])
         # Pre-define arrays for the recursive terms (A and A_prime)
         A = np.zeros((len(time_diffs)+1))
         A_prime = np.zeros((len(time_diffs)+1))
@@ -373,24 +430,24 @@ class gb_mep:
         else:
             subset_nodes = np.intersect1d(ar1=self.nodes, ar2=np.where(ds < thresh)[0])
         # Calculate baseline terms for p-values
-        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=self.start_times[node_index][0])
+        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=start_times[node_index][0])
         A_terms = np.zeros(len(A)); A_prime_terms = np.zeros(len(A_prime))
         # Calculate required elements for recursion
         for secondary_node in subset_nodes:
-            start_breaks = np.searchsorted(a=self.start_times[secondary_node], v=self.start_times[node_index], side='left')
+            start_breaks = np.searchsorted(a=start_times[secondary_node], v=start_times[node_index], side='left')
             start_breaks_diff = np.insert(arr=np.diff(start_breaks), obj=0, values=start_breaks[0])
             if secondary_node == node_index:
-                end_breaks = np.searchsorted(a=self.end_times[secondary_node], v=self.start_times[node_index], side='left')
+                end_breaks = np.searchsorted(a=end_times[secondary_node], v=start_times[node_index], side='left')
                 end_breaks_diff = np.insert(arr=np.diff(end_breaks), obj=0, values=end_breaks[0])
-            for k, t in enumerate(self.start_times[node_index]):
+            for k, t in enumerate(start_times[node_index]):
                 if k > 0:
-                    time_diffs_A = t - self.start_times[secondary_node][start_breaks[k-1]:start_breaks[k]]
+                    time_diffs_A = t - start_times[secondary_node][start_breaks[k-1]:start_breaks[k]]
                     if secondary_node == node_index:
-                        time_diffs_A_prime = t - self.end_times[secondary_node][end_breaks[k-1]:end_breaks[k]]
+                        time_diffs_A_prime = t - end_times[secondary_node][end_breaks[k-1]:end_breaks[k]]
                 else:
-                    time_diffs_A = t - self.start_times[secondary_node][:start_breaks[k]]
+                    time_diffs_A = t - start_times[secondary_node][:start_breaks[k]]
                     if secondary_node == node_index:
-                        time_diffs_A_prime = t - self.end_times[secondary_node][:end_breaks[k]]
+                        time_diffs_A_prime = t - end_times[secondary_node][:end_breaks[k]]
                 ## Update A and A_prime
                 A[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A)) 
                 if secondary_node == node_index:
@@ -400,12 +457,20 @@ class gb_mep:
             if secondary_node == node_index:
                 A_prime_terms += params[4] / params[5] * (np.insert(arr=np.diff(A_prime), obj=0, values=A_prime[0]) - end_breaks_diff)
         ## Return p-values
-        return np.exp(baseline_terms + A_terms + A_prime_terms)
+        pvs = np.exp(baseline_terms + A_terms + A_prime_terms)
+        if not test_split:
+            return pvs
+        else:
+            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep(self, params, node_index, thresh=None):
+    def pvals_gbmep(self, params, node_index, thresh=None, start_times=None, end_times=None, test_split=False):
+        if start_times is None:
+            start_times = self.start_times
+        if end_times is None:
+            end_times = self.end_times
         # Time differences for starting times for node with corresponding index
-        time_diffs = np.diff(self.start_times[node_index])
+        time_diffs = np.diff(start_times[node_index])
         # Pre-define arrays for the recursive terms (A and A_prime)
         A = np.zeros((len(time_diffs)+1))
         A_prime = np.zeros((len(time_diffs)+1))
@@ -417,21 +482,21 @@ class gb_mep:
         else:
             subset_nodes = np.intersect1d(ar1=self.nodes, ar2=np.where(ds < thresh)[0])
         # Calculate baseline terms for p-values
-        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=self.start_times[node_index][0])
+        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=start_times[node_index][0])
         A_terms = np.zeros(len(A)); A_prime_terms = np.zeros(len(A_prime))
         # Calculate required elements for recursion
         for secondary_node in subset_nodes:
-            start_breaks = np.searchsorted(a=self.start_times[secondary_node], v=self.start_times[node_index], side='left')
+            start_breaks = np.searchsorted(a=start_times[secondary_node], v=start_times[node_index], side='left')
             start_breaks_diff = np.insert(arr=np.diff(start_breaks), obj=0, values=start_breaks[0])
-            end_breaks = np.searchsorted(a=self.end_times[secondary_node], v=self.start_times[node_index], side='left')
+            end_breaks = np.searchsorted(a=end_times[secondary_node], v=start_times[node_index], side='left')
             end_breaks_diff = np.insert(arr=np.diff(end_breaks), obj=0, values=end_breaks[0])
-            for k, t in enumerate(self.start_times[node_index]):
+            for k, t in enumerate(start_times[node_index]):
                 if k > 0:
-                    time_diffs_A = t - self.start_times[secondary_node][start_breaks[k-1]:start_breaks[k]]
-                    time_diffs_A_prime = t - self.end_times[secondary_node][end_breaks[k-1]:end_breaks[k]]
+                    time_diffs_A = t - start_times[secondary_node][start_breaks[k-1]:start_breaks[k]]
+                    time_diffs_A_prime = t - end_times[secondary_node][end_breaks[k-1]:end_breaks[k]]
                 else:
-                    time_diffs_A = t - self.start_times[secondary_node][:start_breaks[k]]
-                    time_diffs_A_prime = t - self.end_times[secondary_node][:end_breaks[k]]
+                    time_diffs_A = t - start_times[secondary_node][:start_breaks[k]]
+                    time_diffs_A_prime = t - end_times[secondary_node][:end_breaks[k]]
                 ## Update A and A_prime
                 A[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A)) 
                 A_prime[k] = ((np.exp(-params[4] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[4] * time_diffs_A_prime)) 
@@ -439,4 +504,8 @@ class gb_mep:
             A_terms += np.exp(-params[3] * ds[secondary_node]) * params[1] / params[2] * (np.insert(arr=np.diff(A), obj=0, values=A[0]) - start_breaks_diff)
             A_prime_terms += np.exp(-params[6] * ds[secondary_node]) * params[4] / params[5] * (np.insert(arr=np.diff(A_prime), obj=0, values=A_prime[0]) - end_breaks_diff)
         ## Return p-values
-        return np.exp(baseline_terms + A_terms + A_prime_terms)
+        pvs = np.exp(baseline_terms + A_terms + A_prime_terms)
+        if not test_split:
+            return pvs
+        else:
+            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]

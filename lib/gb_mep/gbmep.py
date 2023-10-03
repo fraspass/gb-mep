@@ -36,6 +36,19 @@ class gb_mep:
             self.N[node] = len(self.start_times[node])
             self.N_prime[node] = len(self.end_times[node])
 
+    ### Fit the Poisson process models 
+    def fit_poisson(self, subset_nodes=None):
+        # Define the dictionary for results
+        res = {}
+        # If the subset of nodes is not specified, consider all nodes
+        if subset_nodes is None:
+            subset_nodes = self.nodes
+        # Loop over all nodes in the subset
+        for node in subset_nodes:
+            res[node] = self.N[node] / self.T
+        # Return dictionary
+        return res        
+
     ### Fit the model to a subset of nodes
     def fit(self, x0, subset_nodes=None, start_times=True, end_times=True, distance_start=False, distance_end=False, thresh=1):
         # Define the dictionary for results
@@ -93,7 +106,7 @@ class gb_mep:
                 return ValueError('The chosen combination of start_times, end_times, distance_start and distance_end is not supported by this library.')
             # Minimise negative log-likelihood, or obtain exact solution if the function is simply the Poisson process
             if f == 'Poisson':
-                res[node] = np.log(len(self.start_times[node]) / self.T)
+                res[node] = np.log(self.N[node] / self.T)
             else:
                 res[node] = minimize(fun=f, x0=x0, args=f_args, method='L-BFGS-B')
         return res
@@ -274,8 +287,8 @@ class gb_mep:
         start_times = {}
         end_times = {}
         for node in self.nodes:
-            start_times[node] = np.concatenate((self.start_times[node], test_set['start_time'][test_set['start_id'] == node])).sort_values()
-            end_times[node] = np.concatenate((self.end_times[node], test_set['end_time'][test_set['start_id'] == node])).sort_values()
+            start_times[node] = np.sort(np.concatenate((self.start_times[node], test_set['start_time'][test_set['start_id'] == node])))
+            end_times[node] = np.sort(np.concatenate((self.end_times[node], test_set['end_time'][test_set['start_id'] == node])))
         return start_times, end_times
 
     ## Calculate p-values for Poisson process

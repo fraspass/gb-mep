@@ -269,19 +269,13 @@ class gb_mep:
         return -ll
 
     ## Add test set event times to the training set event times
-    def augment_start_times(self, test_set=None):
-        # Select set of starting and ending times times
-        if test_set is not None:
-            # For each node, find all start times and end times in the test set and add them to the existing set
-            start_times = {}
-            end_times = {}
-            for node in self.nodes:
-                start_times[node] = np.concatenate((self.start_times[node], test_set['start_time'][test_set['start_id'] == node])).sort_values()
-                end_times[node] = np.concatenate((self.end_times[node], test_set['end_time'][test_set['start_id'] == node])).sort_values()     
-        else:
-            # If there is no test set, use the training set
-            start_times = self.start_times
-            end_times = self.end_times
+    def augment_start_times(self, test_set):
+        # For each node, find all start times and end times in the test set and add them to the existing set
+        start_times = {}
+        end_times = {}
+        for node in self.nodes:
+            start_times[node] = np.concatenate((self.start_times[node], test_set['start_time'][test_set['start_id'] == node])).sort_values()
+            end_times[node] = np.concatenate((self.end_times[node], test_set['end_time'][test_set['start_id'] == node])).sort_values()
         return start_times, end_times
 
     ## Calculate p-values for Poisson process

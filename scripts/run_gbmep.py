@@ -35,7 +35,7 @@ with open('results/res_smep.pkl', 'rb') as f:
 
 ## Load results for the GB-MEP model without end times
 res_gbmep_self = {}
-for file in glob.glob('results/res_gbmep_self/*.pkl'):
+for file in glob.glob('results/res_gbmep_start/*.pkl'):
     with open(file, 'rb') as f:
         res_gbmep_self.update(pickle.load(f))
 

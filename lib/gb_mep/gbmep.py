@@ -292,10 +292,12 @@ class gb_mep:
         return start_times, end_times
 
     ## Calculate p-values for Poisson process
-    def pvals_poisson_process(self, param, node_index, start_times):
+    def pvals_poisson_process(self, param, node_index, start_times=None, test_split=False):
+        if start_times is None:
+            start_times = self.start_times
         # Calculate p-values
         pvs = np.exp(-param * np.insert(arr=np.diff(start_times[node_index]), obj=0, values=start_times[node_index][0]))
-        if self.N[node_index] == len(pvs):
+        if not test_split:
             return pvs
         else:
             return pvs[:self.N[node_index]], pvs[self.N[node_index]:]

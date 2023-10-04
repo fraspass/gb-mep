@@ -2,7 +2,11 @@
 import numpy as np
 import argparse
 import pickle
-import glob
+import glob, os
+
+## Check if directory exists
+if not os.path.exists('results/res_gbmep'):
+   os.makedirs('results/res_gbmep')
 
 ## Parser to give parameter values 
 parser = argparse.ArgumentParser()

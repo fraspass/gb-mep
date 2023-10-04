@@ -37,5 +37,5 @@ nodes_subset = G.nodes[lower:int(np.min([upper,798]))]
 res_gbmep = G.fit(x0=-np.ones(4), subset_nodes=nodes_subset, start_times=True, end_times=False, distance_start=True, distance_end=False, thresh=1)
 
 ## Save the results
-with open('res_gbmep_self_' + str(suffix) + '.pkl', 'wb') as f:
+with open('results/res_gbmep_self/res_gbmep_self_' + str(suffix) + '.pkl', 'wb') as f:
     pickle.dump(res_gbmep, f)

@@ -4,12 +4,6 @@ import pickle
 import glob, os
 import scipy.stats as stats
 
-## Import plotting libraries
-import matplotlib.pyplot as plt
-from matplotlib import rc
-rc('font',**{'family':'sans-serif','sans-serif':['Lato']})
-rc('text', usetex=True)
-
 ## Import library gb_mep
 import gb_mep
 

@@ -60,6 +60,17 @@ class gb_mep:
         for node in subset_nodes:
             # Print node and name
             print('\r', node, '-', self.id_map[node], ' '*20, end='\r')
+            # Initial values for optimisation
+            if isinstance(x0, dict):
+                if node in x0:
+                    if hasattr(x0[node],'x'):
+                        starting_values = x0[node].x
+                    else:
+                        starting_values = x0[node]
+                else:
+                    return ValueError('Node' + str(node) + 'is not included in dictionary for initialisation')
+            else:
+                starting_values = x0
             # Obtain distances if required
             if distance_start or distance_end:
                 ds = self.distance_matrix[node]
@@ -108,7 +119,7 @@ class gb_mep:
             if f == 'Poisson':
                 res[node] = np.log(self.N[node] / self.T)
             else:
-                res[node] = minimize(fun=f, x0=x0, args=f_args, method='L-BFGS-B')
+                res[node] = minimize(fun=f, x0=starting_values, args=f_args, method='L-BFGS-B')
         return res
 
     ### Calculate negative log-likelihood for the self-exciting model, for a specific node index

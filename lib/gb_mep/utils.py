@@ -1,6 +1,32 @@
 #!/usr/bin/env python3
 import numpy as np
 
+## Combination of dictionaries
+def combine_dictionaries(d1, d2, cut_d2=0, add_in_between=None):
+	combined_dictionary = {}
+	for node in np.union1d(list(d1.keys()), list(d2.keys())):
+		if hasattr(d1[node],'x') and hasattr(d2[node],'x'):
+			if add_in_between is not None:
+				combined_dictionary[node] = np.concatenate((d1[node].x, [add_in_between], d2[node].x[cut_d2:]))
+			else:
+				combined_dictionary[node] = np.concatenate((d1[node].x, d2[node].x[cut_d2:]))
+		else:
+			if add_in_between is not None:
+				combined_dictionary[node] = np.concatenate((d1[node], d2[node][cut_d2:]))
+			else:
+				combined_dictionary[node] = np.concatenate((d1[node], [add_in_between], d2[node][cut_d2:]))
+	return combined_dictionary
+
+## Append to dictionary
+def append_to_dictionary(d, val):
+	out_dict = {}
+	for node in d:
+		if hasattr(d[node],'x'):
+			out_dict[node] = np.insert(d[node].x, -1, val)
+		else:
+			out_dict[node] = np.insert(d[node], -1, val)
+	return out_dict
+
 ## Parameter transformations
 def transform_parameters(p, to_unconstrained=False):
 	# Dimension of the parameter vector (one if only one number is provided)

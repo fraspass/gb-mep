@@ -100,12 +100,13 @@ for index in G.nodes:
     y_gbmep_start_train[index] = np.percentile(a=p_gbmep_start_train, q=x*100)
     y_gbmep_train[index] = np.percentile(a=p_gbmep_train, q=x*100)
     # Caclulate observed percentiles for test set
-    y_poisson_test[index] = np.percentile(a=p_poisson_test, q=x*100)
-    y_mep_test[index] = np.percentile(a=p_mep_test, q=x*100)
-    y_sep_test[index] = np.percentile(a=p_sep_test, q=x*100)
-    y_smep_test[index] = np.percentile(a=p_smep_test, q=x*100)
-    y_gbmep_start_test[index] = np.percentile(a=p_gbmep_start_test, q=x*100)
-    y_gbmep_test[index] = np.percentile(a=p_gbmep_test, q=x*100)
+    if len(p_poisson_test) > 0:
+        y_poisson_test[index] = np.percentile(a=p_poisson_test, q=x*100)
+        y_mep_test[index] = np.percentile(a=p_mep_test, q=x*100)
+        y_sep_test[index] = np.percentile(a=p_sep_test, q=x*100)
+        y_smep_test[index] = np.percentile(a=p_smep_test, q=x*100)
+        y_gbmep_start_test[index] = np.percentile(a=p_gbmep_start_test, q=x*100)
+        y_gbmep_test[index] = np.percentile(a=p_gbmep_test, q=x*100)
     # Calculate KS statistic for training set
     k_poisson_train[index] = stats.kstest(p_poisson_train, stats.uniform.cdf)
     k_mep_train[index] = stats.kstest(p_mep_train, stats.uniform.cdf)
@@ -114,12 +115,13 @@ for index in G.nodes:
     k_gbmep_start_train[index] = stats.kstest(p_gbmep_start_train, stats.uniform.cdf)
     k_gbmep_train[index] = stats.kstest(p_gbmep_train, stats.uniform.cdf)
     # Calculate KS statistic for test set
-    k_poisson_test[index] = stats.kstest(p_poisson_test, stats.uniform.cdf)
-    k_mep_test[index] = stats.kstest(p_mep_test, stats.uniform.cdf)
-    k_sep_test[index] = stats.kstest(p_sep_test, stats.uniform.cdf)
-    k_smep_test[index] = stats.kstest(p_smep_test, stats.uniform.cdf)
-    k_gbmep_start_test[index] = stats.kstest(p_gbmep_start_test, stats.uniform.cdf)
-    k_gbmep_test[index] = stats.kstest(p_gbmep_test, stats.uniform.cdf)
+    if len(p_poisson_test) > 0:
+        k_poisson_test[index] = stats.kstest(p_poisson_test, stats.uniform.cdf)
+        k_mep_test[index] = stats.kstest(p_mep_test, stats.uniform.cdf)
+        k_sep_test[index] = stats.kstest(p_sep_test, stats.uniform.cdf)
+        k_smep_test[index] = stats.kstest(p_smep_test, stats.uniform.cdf)
+        k_gbmep_start_test[index] = stats.kstest(p_gbmep_start_test, stats.uniform.cdf)
+        k_gbmep_test[index] = stats.kstest(p_gbmep_test, stats.uniform.cdf)
 
 ## Save the results
 y_train = {}; k_train = {}

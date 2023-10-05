@@ -142,7 +142,7 @@ if not os.path.exists('results/res_qq_start'):
 ## Save as .pkl files
 with open('results/res_qq_start/y_train.pkl', 'wb') as f:
     pickle.dump(y_train, f)
-with open('results/res_qq_start/ktrain.pkl', 'wb') as f:
+with open('results/res_qq_start/k_train.pkl', 'wb') as f:
     pickle.dump(k_train, f)
 with open('results/res_qq_start/y_test.pkl', 'wb') as f:
     pickle.dump(y_test, f)

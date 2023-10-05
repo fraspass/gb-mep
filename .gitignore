@@ -6,3 +6,4 @@ data/santander_d*
 .DS_Store
 lib/gb_mep/__pycache__
 lib/gb_mep/__pycache__/*
+results/res_qq_start/*

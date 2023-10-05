@@ -34,10 +34,10 @@ with open('results/res_smep.pkl', 'rb') as f:
     res_smep = pickle.load(f)
 
 ## Load results for the GB-MEP model without end times
-res_gbmep_self = {}
+res_gbmep_start = {}
 for file in glob.glob('results/res_gbmep_start/*.pkl'):
     with open(file, 'rb') as f:
-        res_gbmep_self.update(pickle.load(f))
+        res_gbmep_start.update(pickle.load(f))
 
 ## Obtain gb_mep object and expand DataFrame with the test set
 G = gb_mep.gb_mep(df=santander_train, id_map=santander_dictionary, distance_matrix=santander_distances)
@@ -51,7 +51,7 @@ nodes_subset = G.nodes[lower:int(np.min([upper,798]))]
 ## Obtain results via model fitting
 res_gbmep = {}
 for node in nodes_subset:
-    r = G.fit(x0=np.concatenate((res_gbmep_self[node].x, res_smep[node].x[3:5])), subset_nodes=[node], start_times=True, end_times=True, distance_start=True, distance_end=False, thresh=1)
+    r = G.fit(x0=np.concatenate((res_gbmep_start[node].x, res_smep[node].x[3:5])), subset_nodes=[node], start_times=True, end_times=True, distance_start=True, distance_end=False, thresh=1)
     res_gbmep[node] = r[node]
 
 ## Save the results

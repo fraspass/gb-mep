@@ -81,3 +81,5 @@ def transform_parameters(p, to_unconstrained=False):
 			params[5] += params[4]
 		else:
 			return ValueError('Incorrect number of parameters.')
+	## Return model parameters in transformed form
+	return params

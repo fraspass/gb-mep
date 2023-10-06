@@ -2,7 +2,7 @@
 import numpy as np
 import argparse
 import pickle
-import glob, os
+import os
 
 ## Check if directory exists
 if not os.path.exists('results/res_gbmep'):
@@ -29,16 +29,6 @@ santander_distances = np.load('data/santander_distances.npy')
 with open('data/santander_dictionary.pkl', 'rb') as f:
     santander_dictionary = pickle.load(f)
 
-## Load results for the SMEP model
-with open('results/res_smep.pkl', 'rb') as f:
-    res_smep = pickle.load(f)
-
-## Load results for the GB-MEP model without end times
-res_gbmep_start = {}
-for file in glob.glob('results/res_gbmep_start/*.pkl'):
-    with open(file, 'rb') as f:
-        res_gbmep_start.update(pickle.load(f))
-
 ## Obtain gb_mep object and expand DataFrame with the test set
 G = gb_mep.gb_mep(df=santander_train, id_map=santander_dictionary, distance_matrix=santander_distances)
 start_times, end_times = G.augment_start_times(santander_test)
@@ -49,15 +39,12 @@ upper = int(50*(suffix+1))
 nodes_subset = G.nodes[lower:int(np.min([upper,798]))]
 
 ## Import benchmark results for initialisation
-with open('results/res_sep.pkl', 'rb') as f:
-    res_sep = pickle.load(f)
-
-with open('results/res_mep.pkl', 'rb') as f:
-    res_mep = pickle.load(f)
+with open('results/res_smep.pkl', 'rb') as f:
+    res_smep = pickle.load(f)
 
 ## Obtain results via model fitting
-start_vals = gb_mep.combine_dictionaries(d1=res_sep, d2=res_mep, cut_d2=1, add_in_between=np.log(1))
-res_gbmep = G.fit(x0=start_vals, subset_nodes=nodes_subset, start_times=True, end_times=True, distance_start=True, distance_end=False, thresh=.5, min_nodes=5)
+start_vals = gb_mep.insert_in_dictionary(d=res_smep, val=1, pos=3)
+res_gbmep = G.fit(x0=start_vals, subset_nodes=nodes_subset, start_times=True, end_times=True, distance_start=True, distance_end=False, thresh=.5, min_nodes=3)
 
 ## Save the results
 with open('results/res_gbmep/res_gbmep_' + str(suffix) + '.pkl', 'wb') as f:

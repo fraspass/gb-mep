@@ -41,7 +41,7 @@ upper = int(50*(suffix+1))
 nodes_subset = G.nodes[lower:int(np.min([upper,798]))]
 
 ## Import benchmark results for initialisation
-with open('results/res_sep.pkl', 'rb') as f:
+with open('results/res_sep_end.pkl', 'rb') as f:
     res_sep = pickle.load(f)
 
 ## Obtain results via model fitting

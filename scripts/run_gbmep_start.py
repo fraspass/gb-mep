@@ -38,8 +38,13 @@ lower = int(50*suffix)
 upper = int(50*(suffix+1))
 nodes_subset = G.nodes[lower:int(np.min([upper,798]))]
 
+## Import benchmark results for initialisation
+with open('results/res_sep.pkl', 'rb') as f:
+    res_sep = pickle.load(f)
+
 ## Obtain results via model fitting
-res_gbmep = G.fit(x0=-np.ones(4), subset_nodes=nodes_subset, start_times=True, end_times=False, distance_start=True, distance_end=False, thresh=1)
+start_vals = gb_mep.append_to_dictionary(d=res_sep, val=np.log(1))
+res_gbmep = G.fit(x0=start_vals, subset_nodes=nodes_subset, start_times=True, end_times=False, distance_start=True, distance_end=False, thresh=.5, min_nodes=5)
 
 ## Save the results
 with open('results/res_gbmep_start/res_gbmep_start_' + str(suffix) + '.pkl', 'wb') as f:

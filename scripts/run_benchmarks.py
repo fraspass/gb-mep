@@ -27,11 +27,11 @@ start_times, end_times = G.augment_start_times(santander_test)
 ## Poisson process fit
 res_pp = G.fit_poisson()
 ## Mutually exciting process fit
-res_mep = G.fit(x0=-np.ones(3), subset_nodes=G.nodes, start_times=False, end_times=True, distance_start=False, distance_end=False)
+res_mep = G.fit(x0=-4*np.ones(3), subset_nodes=G.nodes, start_times=False, end_times=True, distance_start=False, distance_end=False)
 ## Self-exciting process fit
-res_sep = G.fit(x0=-np.ones(3), subset_nodes=G.nodes, start_times=True, end_times=False, distance_start=False, distance_end=False)
+res_sep = G.fit(x0=-4*np.ones(3), subset_nodes=G.nodes, start_times=True, end_times=False, distance_start=False, distance_end=False)
 ## Self-and-mutually exciting process fit
-res_smep = G.fit(x0=-np.ones(5), subset_nodes=G.nodes, start_times=True, end_times=True, distance_start=False, distance_end=False)
+res_smep = G.fit(x0=-4*np.ones(5), subset_nodes=G.nodes, start_times=True, end_times=True, distance_start=False, distance_end=False)
 
 ## Save the results - Poisson process
 with open('results/res_pp.pkl', 'wb') as f:

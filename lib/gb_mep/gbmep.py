@@ -50,7 +50,7 @@ class gb_mep:
         return res        
 
     ### Fit the model to a subset of nodes
-    def fit(self, x0, subset_nodes=None, start_times=True, end_times=True, distance_start=False, distance_end=False, thresh=1):
+    def fit(self, x0, subset_nodes=None, start_times=True, end_times=True, distance_start=False, distance_end=False, thresh=1, min_nodes=None):
         # Define the dictionary for results
         res = {}
         # If the subset of nodes is not specified, consider all nodes
@@ -82,7 +82,11 @@ class gb_mep:
                 condition_full = True
                 condition = not (distance_start or distance_end)
             if condition_full:
-                for secondary_node in ([node] if condition else np.intersect1d(ar1=self.nodes, ar2=np.where(ds < thresh)[0])):
+                if not condition:
+                    neighbours = np.intersect1d(ar1=self.nodes, ar2=np.where(ds < thresh)[0])
+                    if min_nodes is not None and min_nodes > len(neighbours):
+                        neighbours = np.intersect1d(ar1=self.nodes, ar2=np.where(ds < np.sort(ds)[min_nodes])[0])
+                for secondary_node in ([node] if condition else neighbours):
                     start_breaks = np.searchsorted(a=self.start_times[secondary_node], v=self.start_times[node], side='left')
                     end_breaks = np.searchsorted(a=self.end_times[secondary_node], v=self.start_times[node], side='left')
                     for k, t in enumerate(self.start_times[node]):
@@ -93,15 +97,19 @@ class gb_mep:
                             time_diffs_A[k, secondary_node] = t - self.start_times[secondary_node][:start_breaks[k]]
                             time_diffs_A_prime[k, secondary_node] = t - self.end_times[secondary_node][:end_breaks[k]]
             # Obtain the correct log-likelihood function based on fitting parameters
+            add_neighbours = False
             if start_times and end_times and distance_start and distance_end:
                 f = self.negative_loglikelihood_gbmep
-                f_args = (node, time_diffs_A, time_diffs_A_prime, thresh)
+                f_args = (node, time_diffs_A, time_diffs_A_prime, neighbours)
+                add_neighbours = True
             elif start_times and end_times and distance_start and not distance_end:
                 f = self.negative_loglikelihood_gbmep_start_self
-                f_args = (node, time_diffs_A, time_diffs_A_prime, thresh)
+                f_args = (node, time_diffs_A, time_diffs_A_prime, neighbours)
+                add_neighbours = True
             elif start_times and not end_times and distance_start:
                 f = self.negative_loglikelihood_gbmep_start
-                f_args = (node, time_diffs_A, thresh)
+                f_args = (node, time_diffs_A, neighbours)
+                add_neighbours = True
             elif start_times and end_times and not distance_start and not distance_end:
                 f = self.negative_loglikelihood_smep
                 f_args = (node, time_diffs_A, time_diffs_A_prime)
@@ -120,6 +128,8 @@ class gb_mep:
                 res[node] = np.log(self.N[node] / self.T)
             else:
                 res[node] = minimize(fun=f, x0=starting_values, args=f_args, method='L-BFGS-B')
+                if add_neighbours:
+                    res[node].subset_nodes = neighbours
         return res
 
     ### Calculate negative log-likelihood for the self-exciting model, for a specific node index
@@ -193,7 +203,7 @@ class gb_mep:
         return -ll
 
     ### Calculate negative log-likelihood for the full model without a distance function for the end times, for a specific node index
-    def negative_loglikelihood_gbmep_start(self, p, node_index, time_diffs_A, thresh=1):
+    def negative_loglikelihood_gbmep_start(self, p, node_index, time_diffs_A, subset_nodes):
         # Transform parameters to original scale (lambda, alpha, beta, theta)
         params = np.exp(p)
         params[2] += params[1]
@@ -201,10 +211,6 @@ class gb_mep:
         time_diffs = np.diff(self.start_times[node_index])
         # Obtain distance between node and all other nodes
         ds = self.distance_matrix[node_index]
-        if thresh is None:
-            subset_nodes = self.nodes
-        else:
-            subset_nodes = np.intersect1d(ar1=self.nodes, ar2=np.where(ds < thresh)[0])
         # Pre-define arrays for the recursive terms (A)
         A = np.zeros((len(time_diffs)+1, len(subset_nodes)))
         # Compensator component of loglikelihood
@@ -223,7 +229,7 @@ class gb_mep:
         return -ll
     
     ### Calculate negative log-likelihood for the full model without a distance function for the end times, for a specific node index
-    def negative_loglikelihood_gbmep_start_self(self, p, node_index, time_diffs_A, time_diffs_A_prime, thresh=1):
+    def negative_loglikelihood_gbmep_start_self(self, p, node_index, time_diffs_A, time_diffs_A_prime, subset_nodes):
         # Transform parameters to original scale (lambda, alpha, beta, theta, alpha_prime, beta_prime)
         params = np.exp(p)
         params[2] += params[1]
@@ -232,10 +238,6 @@ class gb_mep:
         time_diffs = np.diff(self.start_times[node_index])
         # Obtain distance between node and all other nodes
         ds = self.distance_matrix[node_index]
-        if thresh is None:
-            subset_nodes = self.nodes
-        else:
-            subset_nodes = np.intersect1d(ar1=self.nodes, ar2=np.where(ds < thresh)[0])
         # Pre-define arrays for the recursive terms (A and A_prime)
         A = np.zeros((len(time_diffs)+1, len(subset_nodes)))
         A_prime = np.zeros((len(time_diffs)+1, len(subset_nodes)))
@@ -259,7 +261,7 @@ class gb_mep:
         return -ll
 
     ### Calculate negative log-likelihood for the full model, for a specific node index
-    def negative_loglikelihood_gbmep(self, p, node_index, time_diffs_A, time_diffs_A_prime, thresh=None):
+    def negative_loglikelihood_gbmep(self, p, node_index, time_diffs_A, time_diffs_A_prime, subset_nodes):
         # Transform parameters to original scale (lambda, alpha, beta, theta, alpha_prime, beta_prime, theta_prime)
         params = np.exp(p)
         params[2] += params[1]
@@ -268,10 +270,6 @@ class gb_mep:
         time_diffs = np.diff(self.start_times[node_index])
         # Obtain distance between node and all other nodes
         ds = self.distance_matrix[node_index]
-        if thresh is None:
-            subset_nodes = self.nodes
-        else:
-            subset_nodes = np.intersect1d(ar1=self.nodes, ar2=np.where(ds < thresh)[0])
         # Pre-define arrays for the recursive terms (A and A_prime)
         A = np.zeros((len(time_diffs)+1, len(subset_nodes)))
         A_prime = np.zeros((len(time_diffs)+1, len(subset_nodes)))
@@ -392,7 +390,7 @@ class gb_mep:
             return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
     
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start(self, params, node_index, thresh=None, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_start(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -403,11 +401,6 @@ class gb_mep:
         A = np.zeros((len(time_diffs)+1))
         # Obtain distance between node and all other nodes
         ds = self.distance_matrix[node_index]
-        # Find the subset of nodes based on the difference 
-        if thresh is None:
-            subset_nodes = self.nodes
-        else:
-            subset_nodes = np.intersect1d(ar1=self.nodes, ar2=np.where(ds < thresh)[0])
         # Calculate baseline terms for p-values
         baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=start_times[node_index][0])
         A_terms = np.zeros(len(A))
@@ -432,7 +425,7 @@ class gb_mep:
             return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start_self(self, params, node_index, thresh=None, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_start_self(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -444,11 +437,6 @@ class gb_mep:
         A_prime = np.zeros((len(time_diffs)+1))
         # Obtain distance between node and all other nodes
         ds = self.distance_matrix[node_index]
-        # Find the subset of nodes based on the difference 
-        if thresh is None:
-            subset_nodes = self.nodes
-        else:
-            subset_nodes = np.intersect1d(ar1=self.nodes, ar2=np.where(ds < thresh)[0])
         # Calculate baseline terms for p-values
         baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=start_times[node_index][0])
         A_terms = np.zeros(len(A)); A_prime_terms = np.zeros(len(A_prime))
@@ -484,7 +472,7 @@ class gb_mep:
             return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep(self, params, node_index, thresh=None, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -496,11 +484,6 @@ class gb_mep:
         A_prime = np.zeros((len(time_diffs)+1))
         # Obtain distance between node and all other nodes
         ds = self.distance_matrix[node_index]
-        # Find the subset of nodes based on the difference 
-        if thresh is None:
-            subset_nodes = self.nodes
-        else:
-            subset_nodes = np.intersect1d(ar1=self.nodes, ar2=np.where(ds < thresh)[0])
         # Calculate baseline terms for p-values
         baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=start_times[node_index][0])
         A_terms = np.zeros(len(A)); A_prime_terms = np.zeros(len(A_prime))

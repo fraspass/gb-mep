@@ -27,6 +27,16 @@ def append_to_dictionary(d, val):
 			out_dict[node] = np.insert(d[node], -1, val)
 	return out_dict
 
+## Insert in dictionary
+def insert_in_dictionary(d, val, pos):
+	out_dict = {}
+	for node in d:
+		if hasattr(d[node],'x'):
+			out_dict[node] = np.insert(d[node].x, pos, val)
+		else:
+			out_dict[node] = np.insert(d[node], pos, val)
+	return out_dict
+
 ## Parameter transformations
 def transform_parameters(p, to_unconstrained=False):
 	# Dimension of the parameter vector (one if only one number is provided)

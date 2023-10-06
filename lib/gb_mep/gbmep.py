@@ -50,7 +50,7 @@ class gb_mep:
         return res        
 
     ### Fit the model to a subset of nodes
-    def fit(self, x0, subset_nodes=None, start_times=True, end_times=True, distance_start=False, distance_end=False, thresh=1, min_nodes=None):
+    def fit(self, x0, subset_nodes=None, start_times=True, end_times=True, distance_start=False, distance_end=False, thresh=1, min_nodes=None, optimiser='L-BFGS-B'):
         # Define the dictionary for results
         res = {}
         # If the subset of nodes is not specified, consider all nodes
@@ -127,7 +127,7 @@ class gb_mep:
             if f == 'Poisson':
                 res[node] = np.log(self.N[node] / self.T)
             else:
-                res[node] = minimize(fun=f, x0=starting_values, args=f_args, method='L-BFGS-B')
+                res[node] = minimize(fun=f, x0=starting_values, args=f_args, method=optimiser)
                 if add_neighbours:
                     res[node].subset_nodes = neighbours
         return res

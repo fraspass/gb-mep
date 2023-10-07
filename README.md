@@ -12,7 +12,7 @@ The _Python_ library can be installed in edit mode as follows:
 ```
 pip install -e lib/
 ```
-After installation, the library can then be imported in any _Python_ session as follows:
+Alternatively, `pip3` can also be used. After installation, the library can then be imported in any _Python_ session as follows:
 ```python3
 import gb_mep
 ```

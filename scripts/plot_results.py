@@ -44,12 +44,6 @@ from matplotlib import rc
 rc('font',**{'family':'sans-serif','sans-serif':['Lato']})
 rc('text', usetex=True)
 
-freq = []; ks1 = []; ks2 = []
-for node in ks_train['smep']:
-    freq += [np.sum(santander_distances < .5, axis=1)[node]]
-    ks1 += [cvm_test['smep'][node]]
-    ks2 += [cvm_test['gbmep'][node]]
-
 # Define theoretical quantiles
 x = np.linspace(start=0, stop=1, num=501, endpoint=False)[1:]
 
@@ -141,9 +135,37 @@ ax.set_title('Side-by-Side Boxplots')
 plt.show()
 
 
+import matplotlib.colors as mcolors
+# Define the custom colormap
+# Define the custom colormap
+colors = [(1, 0, 0), (1, 1, 1), (0, 1, 0)]  # Green to White to Red
+n_bins = 100  # Number of color bins
+cmap_name = "centered_custom_colormap"
+custom_cmap = mcolors.LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bins)
+norm = mcolors.TwoSlopeNorm(vmin=-.15, vcenter=0, vmax=.05)
 
+lats = []; lons = []; scor1 = []; scor2 = []
+for node in ks_train['poisson']:
+    lats += [locations.iloc[node].latitude]
+    lons += [locations.iloc[node].longitude]
+    scor1 += [ks_train['smep'][node].statistic]
+    scor2 += [ks_train['gbmep'][node].statistic]
 
+# Create a scatterplot with color proportional to the 'variable'
+plt.figure(figsize=(8, 6))
+scatter = plt.scatter(lons, lats, c=np.array(scor1)-np.array(scor2), cmap=custom_cmap, s=50, alpha=0.7, norm=norm)
 
+# Add a colorbar for reference
+cbar = plt.colorbar(scatter)
+cbar.set_label('Variable Value')  # Label for the colorbar
+
+# Add labels and title
+plt.xlabel('X-Axis')
+plt.ylabel('Y-Axis')
+plt.title('Scatterplot with Color Proportional to Variable')
+
+# Show the plot
+plt.show()
 
 # Initialise the subplot function using number of rows and columns 
 fig, ax = plt.subplots(2,3, figsize=(12,8))

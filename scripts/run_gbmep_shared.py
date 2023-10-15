@@ -5,8 +5,8 @@ import pickle
 import os
 
 ## Check if directory exists
-if not os.path.exists('results/res_gbmep'):
-   os.makedirs('results/res_gbmep')
+if not os.path.exists('results/res_gbmep_shared'):
+   os.makedirs('results/res_gbmep_shared')
 
 ## Parser to give parameter values 
 parser = argparse.ArgumentParser()
@@ -39,16 +39,13 @@ upper = int(50*(suffix+1))
 nodes_subset = G.nodes[lower:int(np.min([upper,798]))]
 
 ## Import benchmark results for initialisation
-with open('results/res_sep.pkl', 'rb') as f:
-    res_sep = pickle.load(f)
-
 with open('results/res_smep.pkl', 'rb') as f:
     res_smep = pickle.load(f)
 
 ## Obtain results via model fitting
-start_vals = gb_mep.combine_dictionaries(d1=gb_mep.combine_dictionaries(d1=gb_mep.append_to_dictionary(d=res_sep, val=1), d2=res_sep, cut_d2=1), d2=res_smep, cut_d2=3)
-res_gbmep = G.fit(x0=start_vals, subset_nodes=nodes_subset, start_times=True, end_times=True, distance_start=True, distance_end=False, thresh=.5, min_nodes=3)
+start_vals = gb_mep.insert_in_dictionary(d=res_smep, val=1, pos=3)
+res_gbmep_shared = G.fit(x0=start_vals, subset_nodes=nodes_subset, start_times=True, end_times=True, distance_start=True, distance_end=False, thresh=.5, min_nodes=3, shared_parameters=True)
 
 ## Save the results
-with open('results/res_gbmep/res_gbmep_' + str(suffix) + '.pkl', 'wb') as f:
-    pickle.dump(res_gbmep, f)
+with open('results/res_gbmep_shared/res_gbmep_shared_' + str(suffix) + '.pkl', 'wb') as f:
+    pickle.dump(res_gbmep_shared, f)

@@ -43,7 +43,7 @@ with open('results/res_sep.pkl', 'rb') as f:
     res_sep = pickle.load(f)
 
 ## Obtain results via model fitting
-start_vals = gb_mep.append_to_dictionary(d=res_sep, val=np.log(1))
+start_vals = gb_mep.combine_dictionaries(d1=gb_mep.append_to_dictionary(d=res_sep, val=1), d2=res_sep, cut_d2=1)
 res_gbmep = G.fit(x0=start_vals, subset_nodes=nodes_subset, start_times=True, end_times=False, distance_start=True, distance_end=False, thresh=.5, min_nodes=3)
 
 ## Save the results

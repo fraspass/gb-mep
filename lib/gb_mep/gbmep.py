@@ -50,7 +50,7 @@ class gb_mep:
         return res        
 
     ### Fit the model to a subset of nodes
-    def fit(self, x0, subset_nodes=None, start_times=True, end_times=True, distance_start=False, distance_end=False, thresh=1, min_nodes=None, optimiser='L-BFGS-B'):
+    def fit(self, x0, subset_nodes=None, start_times=True, end_times=True, distance_start=False, distance_end=False, thresh=1, min_nodes=None, shared_parameters=False, optimiser='L-BFGS-B'):
         # Define the dictionary for results
         res = {}
         # If the subset of nodes is not specified, consider all nodes
@@ -99,15 +99,15 @@ class gb_mep:
             # Obtain the correct log-likelihood function based on fitting parameters
             add_neighbours = False
             if start_times and end_times and distance_start and distance_end:
-                f = self.negative_loglikelihood_gbmep
+                f = self.negative_loglikelihood_gbmep if not shared_parameters else self.negative_loglikelihood_gbmep_shared
                 f_args = (node, time_diffs_A, time_diffs_A_prime, neighbours)
                 add_neighbours = True
             elif start_times and end_times and distance_start and not distance_end:
-                f = self.negative_loglikelihood_gbmep_start_self
+                f = self.negative_loglikelihood_gbmep_start_self if not shared_parameters else self.negative_loglikelihood_gbmep_start_self_shared
                 f_args = (node, time_diffs_A, time_diffs_A_prime, neighbours)
                 add_neighbours = True
             elif start_times and not end_times and distance_start:
-                f = self.negative_loglikelihood_gbmep_start
+                f = self.negative_loglikelihood_gbmep_start if not shared_parameters else self.negative_loglikelihood_gbmep_start_shared
                 f_args = (node, time_diffs_A, neighbours)
                 add_neighbours = True
             elif start_times and end_times and not distance_start and not distance_end:
@@ -314,9 +314,9 @@ class gb_mep:
             # Loop over all events and update recursive terms A and A_prime
             for k, _ in enumerate(self.start_times[node_index]):
                 if node == node_index:
-                    A[k, nn] = params[1] * ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node]))
+                    A[k, nn] += params[1] * (((np.exp(-params[2] * time_diffs[k-1]) * A[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node])))
                 else:
-                    A[k, nn] = params[4] * ((np.exp(-params[5] * time_diffs[k-1]) * A[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A[k, node]))
+                    A[k, nn] += params[4] * (((np.exp(-params[5] * time_diffs[k-1]) * A[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A[k, node])))
         # Calculate B and use it to update the log-likelihood
         B = np.exp(-params[3] * ds[subset_nodes]) * A
         ll += np.sum(np.log(params[0] + B.sum(axis=1)))
@@ -344,16 +344,16 @@ class gb_mep:
             # Compensator components of loglikelihood
             if node == node_index:
                 ll += params[1] / params[2] * np.sum(np.exp(-params[2] * (self.T - self.start_times[node])) - 1)
-                ll += params[4] / params[5] * np.sum(np.exp(-params[5] * (self.T - self.end_times[node])) - 1)
+                ll += params[6] / params[7] * np.sum(np.exp(-params[7] * (self.T - self.end_times[node])) - 1)
             else:
-                ll += np.exp(-params[3] * ds[node]) * params[6] / params[7] * np.sum(np.exp(-params[7] * (self.T - self.start_times[node])) - 1)
+                ll += np.exp(-params[3] * ds[node]) * params[4] / params[5] * np.sum(np.exp(-params[5] * (self.T - self.start_times[node])) - 1)
             # Loop over all events and update recursive terms A and A_prime
             for k, _ in enumerate(self.start_times[node_index]):    
                 if node == node_index:
-                    A[k, nn] = params[1] * ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node]))
-                    A_prime[k, nn] = params[4] * ((np.exp(-params[5] * time_diffs[k-1]) * A_prime[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A_prime[k, node])) 
+                    A[k, nn] = params[1] * (((np.exp(-params[2] * time_diffs[k-1]) * A[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node])))
+                    A_prime[k, nn] = params[6] * (((np.exp(-params[7] * time_diffs[k-1]) * A_prime[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[7] * time_diffs_A_prime[k, node])))
                 else:
-                    A[k, nn] = params[6] * ((np.exp(-params[7] * time_diffs[k-1]) * A[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[7] * time_diffs_A[k, node]))
+                    A[k, nn] = params[4] * (((np.exp(-params[5] * time_diffs[k-1]) * A[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A[k, node])))
         # Calculate B and use it to update the log-likelihood
         B = np.exp(-params[3] * ds[subset_nodes]) * A + A_prime
         ll += np.sum(np.log(params[0] + B.sum(axis=1)))
@@ -366,6 +366,8 @@ class gb_mep:
         params = np.exp(p)
         params[2] += params[1]
         params[5] += params[4]
+        params[7] += params[6]
+        params[10] += params[9]
         # Time differences for starting times for node with corresponding index
         time_diffs = np.diff(self.start_times[node_index])
         # Obtain distance between node and all other nodes
@@ -380,18 +382,18 @@ class gb_mep:
             # Compensator components of loglikelihood
             if node == node_index:
                 ll += params[1] / params[2] * np.sum(np.exp(-params[2] * (self.T - self.start_times[node])) - 1)
-                ll += params[4] / params[5] * np.sum(np.exp(-params[5] * (self.T - self.end_times[node])) - 1)
+                ll += params[6] / params[7] * np.sum(np.exp(-params[7] * (self.T - self.end_times[node])) - 1)
             else:
-                ll += np.exp(-params[3] * ds[node]) * params[6] / params[7] * np.sum(np.exp(-params[7] * (self.T - self.start_times[node])) - 1)
+                ll += np.exp(-params[3] * ds[node]) * params[4] / params[5] * np.sum(np.exp(-params[5] * (self.T - self.start_times[node])) - 1)
                 ll += np.exp(-params[8] * ds[node]) * params[9] / params[10] * np.sum(np.exp(-params[10] * (self.T - self.end_times[node])) - 1)
             # Loop over all events and update recursive terms A and A_prime
             for k, _ in enumerate(self.start_times[node_index]):
                 if node == node_index:
-                    A[k, nn] = params[1] * ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node])) 
-                    A_prime[k, nn] = params[4] * ((np.exp(-params[5] * time_diffs[k-1]) * A_prime[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A_prime[k, node]))
+                    A[k, nn] = params[1] * (((np.exp(-params[2] * time_diffs[k-1]) * A[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A[k, node])))
+                    A_prime[k, nn] = params[6] * (((np.exp(-params[7] * time_diffs[k-1]) * A_prime[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[7] * time_diffs_A_prime[k, node])))
                 else:
-                    A[k, nn] = params[6] * ((np.exp(-params[7] * time_diffs[k-1]) * A[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[7] * time_diffs_A[k, node])) 
-                    A_prime[k, nn] = params[9] * ((np.exp(-params[10] * time_diffs[k-1]) * A_prime[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[10] * time_diffs_A_prime[k, node]))  
+                    A[k, nn] = params[4] * (((np.exp(-params[5] * time_diffs[k-1]) * A[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A[k, node])))
+                    A_prime[k, nn] = params[9] * (((np.exp(-params[10] * time_diffs[k-1]) * A_prime[k-1, nn]) if k > 0 else 0) + np.sum(np.exp(-params[10] * time_diffs_A_prime[k, node]))) 
         # Calculate B and use it to update the log-likelihood
         B = np.exp(-params[3] * ds[subset_nodes]) * A + np.exp(-params[8] * ds[subset_nodes]) * A_prime
         ll += np.sum(np.log(params[0] + B.sum(axis=1)))
@@ -498,7 +500,7 @@ class gb_mep:
             return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
     
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_start_shared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -533,7 +535,7 @@ class gb_mep:
             return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start_self(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_start_self_shared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -580,7 +582,7 @@ class gb_mep:
             return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_shared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -614,6 +616,148 @@ class gb_mep:
             ## Update A and A_prime terms for calculation of differences between conpensators
             A_terms += np.exp(-params[3] * ds[secondary_node]) * params[1] / params[2] * (np.insert(arr=np.diff(A), obj=0, values=A[0]) - start_breaks_diff)
             A_prime_terms += np.exp(-params[6] * ds[secondary_node]) * params[4] / params[5] * (np.insert(arr=np.diff(A_prime), obj=0, values=A_prime[0]) - end_breaks_diff)
+        ## Return p-values
+        pvs = np.exp(baseline_terms + A_terms + A_prime_terms)
+        if not test_split:
+            return pvs
+        else:
+            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+        
+    ## Calculate p-values for GB-MEP with distance function
+    def pvals_gbmep_start(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+        if start_times is None:
+            start_times = self.start_times
+        if end_times is None:
+            end_times = self.end_times
+        # Time differences for starting times for node with corresponding index
+        time_diffs = np.diff(start_times[node_index])
+        # Pre-define arrays for the recursive terms (A)
+        A = np.zeros((len(time_diffs)+1))
+        # Obtain distance between node and all other nodes
+        ds = self.distance_matrix[node_index]
+        # Calculate baseline terms for p-values
+        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=start_times[node_index][0])
+        A_terms = np.zeros(len(A))
+        # Calculate required elements for recursion
+        for secondary_node in subset_nodes:
+            start_breaks = np.searchsorted(a=start_times[secondary_node], v=start_times[node_index], side='left')
+            start_breaks_diff = np.insert(arr=np.diff(start_breaks), obj=0, values=start_breaks[0])
+            for k, t in enumerate(start_times[node_index]):
+                if k > 0:
+                    time_diffs_A = t - start_times[secondary_node][start_breaks[k-1]:start_breaks[k]]
+                else:
+                    time_diffs_A = t - start_times[secondary_node][:start_breaks[k]]
+                ## Update A and A_prime
+                if secondary_node == node_index:
+                    A[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A))
+                else:
+                    A[k] = ((np.exp(-params[4] * time_diffs[k-1]) * A[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[4] * time_diffs_A))
+            ## Update A and A_prime terms for calculation of differences between conpensators
+            if secondary_node == node_index:
+                A_terms += params[1] / params[2] * (np.insert(arr=np.diff(A), obj=0, values=A[0]) - start_breaks_diff)
+            else:
+                A_terms += np.exp(-params[3] * ds[secondary_node]) * params[4] / params[5] * (np.insert(arr=np.diff(A), obj=0, values=A[0]) - start_breaks_diff)
+        ## Return p-values
+        pvs = np.exp(baseline_terms + A_terms)
+        if not test_split:
+            return pvs
+        else:
+            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+
+    ## Calculate p-values for GB-MEP with distance function
+    def pvals_gbmep_start_self(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+        if start_times is None:
+            start_times = self.start_times
+        if end_times is None:
+            end_times = self.end_times
+        # Time differences for starting times for node with corresponding index
+        time_diffs = np.diff(start_times[node_index])
+        # Pre-define arrays for the recursive terms (A and A_prime)
+        A = np.zeros((len(time_diffs)+1))
+        A_prime = np.zeros((len(time_diffs)+1))
+        # Obtain distance between node and all other nodes
+        ds = self.distance_matrix[node_index]
+        # Calculate baseline terms for p-values
+        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=start_times[node_index][0])
+        A_terms = np.zeros(len(A)); A_prime_terms = np.zeros(len(A_prime))
+        # Calculate required elements for recursion
+        for secondary_node in subset_nodes:
+            start_breaks = np.searchsorted(a=start_times[secondary_node], v=start_times[node_index], side='left')
+            start_breaks_diff = np.insert(arr=np.diff(start_breaks), obj=0, values=start_breaks[0])
+            if secondary_node == node_index:
+                end_breaks = np.searchsorted(a=end_times[secondary_node], v=start_times[node_index], side='left')
+                end_breaks_diff = np.insert(arr=np.diff(end_breaks), obj=0, values=end_breaks[0])
+            for k, t in enumerate(start_times[node_index]):
+                if k > 0:
+                    time_diffs_A = t - start_times[secondary_node][start_breaks[k-1]:start_breaks[k]]
+                    if secondary_node == node_index:
+                        time_diffs_A_prime = t - end_times[secondary_node][end_breaks[k-1]:end_breaks[k]]
+                else:
+                    time_diffs_A = t - start_times[secondary_node][:start_breaks[k]]
+                    if secondary_node == node_index:
+                        time_diffs_A_prime = t - end_times[secondary_node][:end_breaks[k]]
+                ## Update A and A_prime
+                if secondary_node == node_index:
+                    A[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A)) 
+                    A_prime[k] = ((np.exp(-params[7] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[7] * time_diffs_A_prime)) 
+                else:
+                    A[k] = ((np.exp(-params[5] * time_diffs[k-1]) * A[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A)) 
+            ## Update A and A_prime terms for calculation of differences between conpensators
+            if secondary_node == node_index:
+                A_terms += params[1] / params[2] * (np.insert(arr=np.diff(A), obj=0, values=A[0]) - start_breaks_diff)
+                A_prime_terms += params[6] / params[7] * (np.insert(arr=np.diff(A_prime), obj=0, values=A_prime[0]) - end_breaks_diff)
+            else:
+                A_terms += np.exp(-params[3] * ds[secondary_node]) * params[4] / params[5] * (np.insert(arr=np.diff(A), obj=0, values=A[0]) - start_breaks_diff)
+        ## Return p-values
+        pvs = np.exp(baseline_terms + A_terms + A_prime_terms)
+        if not test_split:
+            return pvs
+        else:
+            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+
+    ## Calculate p-values for GB-MEP with distance function
+    def pvals_gbmep(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+        if start_times is None:
+            start_times = self.start_times
+        if end_times is None:
+            end_times = self.end_times
+        # Time differences for starting times for node with corresponding index
+        time_diffs = np.diff(start_times[node_index])
+        # Pre-define arrays for the recursive terms (A and A_prime)
+        A = np.zeros((len(time_diffs)+1))
+        A_prime = np.zeros((len(time_diffs)+1))
+        # Obtain distance between node and all other nodes
+        ds = self.distance_matrix[node_index]
+        # Calculate baseline terms for p-values
+        baseline_terms = -params[0] * np.insert(arr=time_diffs, obj=0, values=start_times[node_index][0])
+        A_terms = np.zeros(len(A)); A_prime_terms = np.zeros(len(A_prime))
+        # Calculate required elements for recursion
+        for secondary_node in subset_nodes:
+            start_breaks = np.searchsorted(a=start_times[secondary_node], v=start_times[node_index], side='left')
+            start_breaks_diff = np.insert(arr=np.diff(start_breaks), obj=0, values=start_breaks[0])
+            end_breaks = np.searchsorted(a=end_times[secondary_node], v=start_times[node_index], side='left')
+            end_breaks_diff = np.insert(arr=np.diff(end_breaks), obj=0, values=end_breaks[0])
+            for k, t in enumerate(start_times[node_index]):
+                if k > 0:
+                    time_diffs_A = t - start_times[secondary_node][start_breaks[k-1]:start_breaks[k]]
+                    time_diffs_A_prime = t - end_times[secondary_node][end_breaks[k-1]:end_breaks[k]]
+                else:
+                    time_diffs_A = t - start_times[secondary_node][:start_breaks[k]]
+                    time_diffs_A_prime = t - end_times[secondary_node][:end_breaks[k]]
+                ## Update A and A_prime
+                if secondary_node == node_index:
+                    A[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A)) 
+                    A_prime[k] = ((np.exp(-params[7] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[7] * time_diffs_A_prime)) 
+                else:
+                    A[k] = ((np.exp(-params[5] * time_diffs[k-1]) * A[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A)) 
+                    A_prime[k] = ((np.exp(-params[10] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[10] * time_diffs_A_prime)) 
+            ## Update A and A_prime terms for calculation of differences between conpensators
+            if secondary_node == node_index:
+                A_terms += params[1] / params[2] * (np.insert(arr=np.diff(A), obj=0, values=A[0]) - start_breaks_diff)
+                A_prime_terms += params[6] / params[7] * (np.insert(arr=np.diff(A_prime), obj=0, values=A_prime[0]) - end_breaks_diff)
+            else:
+                A_terms += np.exp(-params[3] * ds[secondary_node]) * params[4] / params[5] * (np.insert(arr=np.diff(A), obj=0, values=A[0]) - start_breaks_diff)
+                A_prime_terms += np.exp(-params[8] * ds[secondary_node]) * params[9] / params[10] * (np.insert(arr=np.diff(A_prime), obj=0, values=A_prime[0]) - end_breaks_diff)
         ## Return p-values
         pvs = np.exp(baseline_terms + A_terms + A_prime_terms)
         if not test_split:

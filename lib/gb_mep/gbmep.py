@@ -99,15 +99,15 @@ class gb_mep:
             # Obtain the correct log-likelihood function based on fitting parameters
             add_neighbours = False
             if start_times and end_times and distance_start and distance_end:
-                f = self.negative_loglikelihood_gbmep if not shared_parameters else self.negative_loglikelihood_gbmep_shared
+                f = self.negative_loglikelihood_gbmep_nonshared if not shared_parameters else self.negative_loglikelihood_gbmep
                 f_args = (node, time_diffs_A, time_diffs_A_prime, neighbours)
                 add_neighbours = True
             elif start_times and end_times and distance_start and not distance_end:
-                f = self.negative_loglikelihood_gbmep_start_self if not shared_parameters else self.negative_loglikelihood_gbmep_start_self_shared
+                f = self.negative_loglikelihood_gbmep_start_self_nonshared if not shared_parameters else self.negative_loglikelihood_gbmep_start_self
                 f_args = (node, time_diffs_A, time_diffs_A_prime, neighbours)
                 add_neighbours = True
             elif start_times and not end_times and distance_start:
-                f = self.negative_loglikelihood_gbmep_start if not shared_parameters else self.negative_loglikelihood_gbmep_start_shared
+                f = self.negative_loglikelihood_gbmep_start_nonshared if not shared_parameters else self.negative_loglikelihood_gbmep_start
                 f_args = (node, time_diffs_A, neighbours)
                 add_neighbours = True
             elif start_times and end_times and not distance_start and not distance_end:
@@ -203,7 +203,7 @@ class gb_mep:
         return -ll
 
     ### Calculate negative log-likelihood for the full model without a distance function for the end times, for a specific node index
-    def negative_loglikelihood_gbmep_start_shared(self, p, node_index, time_diffs_A, subset_nodes):
+    def negative_loglikelihood_gbmep_start(self, p, node_index, time_diffs_A, subset_nodes):
         # Transform parameters to original scale (lambda, alpha, beta, theta)
         params = np.exp(p)
         params[2] += params[1]
@@ -229,7 +229,7 @@ class gb_mep:
         return -ll
     
     ### Calculate negative log-likelihood for the full model without a distance function for the end times, for a specific node index
-    def negative_loglikelihood_gbmep_start_self_shared(self, p, node_index, time_diffs_A, time_diffs_A_prime, subset_nodes):
+    def negative_loglikelihood_gbmep_start_self(self, p, node_index, time_diffs_A, time_diffs_A_prime, subset_nodes):
         # Transform parameters to original scale (lambda, alpha, beta, theta, alpha_prime, beta_prime)
         params = np.exp(p)
         params[2] += params[1]
@@ -261,7 +261,7 @@ class gb_mep:
         return -ll
 
     ### Calculate negative log-likelihood for the full model, for a specific node index
-    def negative_loglikelihood_gbmep_shared(self, p, node_index, time_diffs_A, time_diffs_A_prime, subset_nodes):
+    def negative_loglikelihood_gbmep(self, p, node_index, time_diffs_A, time_diffs_A_prime, subset_nodes):
         # Transform parameters to original scale (lambda, alpha, beta, theta, alpha_prime, beta_prime, theta_prime)
         params = np.exp(p)
         params[2] += params[1]
@@ -291,7 +291,7 @@ class gb_mep:
         return -ll
     
     ### Calculate negative log-likelihood for the full model without a distance function for the end times, for a specific node index
-    def negative_loglikelihood_gbmep_start(self, p, node_index, time_diffs_A, subset_nodes):
+    def negative_loglikelihood_gbmep_start_nonshared(self, p, node_index, time_diffs_A, subset_nodes):
         # Transform parameters to original scale (lambda, alpha, beta, theta)
         params = np.exp(p)
         params[2] += params[1]
@@ -324,7 +324,7 @@ class gb_mep:
         return -ll
     
     ### Calculate negative log-likelihood for the full model without a distance function for the end times, for a specific node index
-    def negative_loglikelihood_gbmep_start_self(self, p, node_index, time_diffs_A, time_diffs_A_prime, subset_nodes):
+    def negative_loglikelihood_gbmep_start_self_nonshared(self, p, node_index, time_diffs_A, time_diffs_A_prime, subset_nodes):
         # Transform parameters to original scale (lambda, alpha, beta, theta, alpha_prime, beta_prime)
         params = np.exp(p)
         params[2] += params[1]
@@ -361,7 +361,7 @@ class gb_mep:
         return -ll
 
     ### Calculate negative log-likelihood for the full model, for a specific node index
-    def negative_loglikelihood_gbmep(self, p, node_index, time_diffs_A, time_diffs_A_prime, subset_nodes):
+    def negative_loglikelihood_gbmep_nonshared(self, p, node_index, time_diffs_A, time_diffs_A_prime, subset_nodes):
         # Transform parameters to original scale (lambda, alpha, beta, theta, alpha_prime, beta_prime, theta_prime)
         params = np.exp(p)
         params[2] += params[1]
@@ -500,7 +500,7 @@ class gb_mep:
             return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
     
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start_shared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_start(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -535,7 +535,7 @@ class gb_mep:
             return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start_self_shared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_start_self(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -582,7 +582,7 @@ class gb_mep:
             return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_shared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -624,7 +624,7 @@ class gb_mep:
             return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
         
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_start_nonshared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -665,7 +665,7 @@ class gb_mep:
             return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start_self(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_start_self_nonshared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -716,7 +716,7 @@ class gb_mep:
             return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_nonshared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:

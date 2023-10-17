@@ -7,3 +7,5 @@ data/santander_d*
 lib/gb_mep/__pycache__
 lib/gb_mep/__pycache__/*
 results/res_qq_start/*
+results/old_results/*
+scripts/old_scripts/*

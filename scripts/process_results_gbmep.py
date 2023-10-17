@@ -33,13 +33,13 @@ with open('results/res_sep.pkl', 'rb') as f:
 with open('results/res_smep.pkl', 'rb') as f:
     res_smep = pickle.load(f)
 
-## Load results for the GB-MEP model without start times only
+## Load results for the GB-MEP model without start times only (shared parameters)
 res_gbmep_start_shared = {}
 for file in glob.glob('results/res_gbmep_start_shared/*.pkl'):
     with open(file, 'rb') as f:
         res_gbmep_start_shared.update(pickle.load(f))
 
-## Load results for the GB-MEP model
+## Load results for the GB-MEP model (shared parameters)
 res_gbmep_shared = {}
 for file in glob.glob('results/res_gbmep_shared/*.pkl'):
     with open(file, 'rb') as f:

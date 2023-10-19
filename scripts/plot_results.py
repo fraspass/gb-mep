@@ -12,6 +12,7 @@ import pandas as pd
 santander_train = pd.read_csv('data/santander_train.csv') 
 santander_test = pd.read_csv('data/santander_test.csv') 
 santander_distances = np.load('data/santander_distances.npy')
+locations = pd.read_csv('data/santander_locations.csv')
 with open('data/santander_dictionary.pkl', 'rb') as f:
     santander_dictionary = pickle.load(f)
 
@@ -58,12 +59,12 @@ for model in y_train:
 # Initialise the subplot function using number of rows and columns 
 fig, ax = plt.subplots(2,3, figsize=(12,8))
 
-for u in [0,1]:
-    for v in [1,2]:
-        ax[u,v].set_yticks([])
+#for u in [0,1]:
+#    for v in [1,2]:
+#        ax[u,v].set_yticks([])
 
-for v in range(3):
-    ax[0,v].set_xticks([])
+#for v in range(3):
+#    ax[0,v].set_xticks([])
 
 for node in y_train['poisson']:
     for model in y_train:
@@ -145,11 +146,11 @@ custom_cmap = mcolors.LinearSegmentedColormap.from_list(cmap_name, colors, N=n_b
 norm = mcolors.TwoSlopeNorm(vmin=-.15, vcenter=0, vmax=.05)
 
 lats = []; lons = []; scor1 = []; scor2 = []
-for node in ks_train['poisson']:
+for node in ks_test['poisson']:
     lats += [locations.iloc[node].latitude]
     lons += [locations.iloc[node].longitude]
-    scor1 += [ks_train['smep'][node].statistic]
-    scor2 += [ks_train['gbmep'][node].statistic]
+    scor1 += [ks_test['smep'][node].statistic]
+    scor2 += [ks_test['gbmep'][node].statistic]
 
 # Create a scatterplot with color proportional to the 'variable'
 plt.figure(figsize=(8, 6))
@@ -170,12 +171,12 @@ plt.show()
 # Initialise the subplot function using number of rows and columns 
 fig, ax = plt.subplots(2,3, figsize=(12,8))
 
-for u in [0,1]:
-    for v in [1,2]:
-        ax[u,v].set_yticks([])
+#for u in [0,1]:
+#    for v in [1,2]:
+#        ax[u,v].set_yticks([])
 
-for v in range(3):
-    ax[0,v].set_xticks([])
+#for v in range(3):
+#    ax[0,v].set_xticks([])
 
 for node in y_test['poisson']:
     for model in y_test:

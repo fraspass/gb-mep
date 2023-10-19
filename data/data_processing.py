@@ -102,8 +102,8 @@ df_test[['start_id','end_id','start_time','end_time']].to_csv('santander_test.cs
 del list_dfs
 
 ## Calculate Haversine distance matrix between stations
-# - Import stations and locations
-locations = pd.read_csv('santander_locations.csv',quotechar='"')
+# - Import stations and locations (and sort in alphabetical order - the file is not sorted, even though it looks like it is!)
+locations = pd.read_csv('santander_locations.csv',quotechar='"').sort_values('StationName')
 # - Earth radius
 re = 6365.079
 # - Transform latitude and longitude in degrees to radians

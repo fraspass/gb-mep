@@ -3,7 +3,6 @@ data/data_processing_2020.py
 data/training
 data/test
 data/santander_t*.csv
-data/santander_d*
 */.DS_Store
 .DS_Store
 lib/gb_mep/__pycache__

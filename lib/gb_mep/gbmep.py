@@ -401,17 +401,32 @@ class gb_mep:
         return -ll
 
     ## Add test set event times to the training set event times
-    def augment_start_times(self, test_set):
+    def augment_start_times(self, test_set, validation_set=None):
         # For each node, find all start times and end times in the test set and add them to the existing set
         start_times = {}
         end_times = {}
+        if validation_set is not None:
+            self.N_test = {}
+            self.N_prime_test = {}
         for node in self.nodes:
-            start_times[node] = np.sort(np.concatenate((self.start_times[node], test_set['start_time'][test_set['start_id'] == node])))
-            end_times[node] = np.sort(np.concatenate((self.end_times[node], test_set['end_time'][test_set['start_id'] == node])))
+            if validation_set is None:
+                start_times[node] = np.sort(np.concatenate((self.start_times[node], test_set['start_time'][test_set['start_id'] == node])))
+                end_times[node] = np.sort(np.concatenate((self.end_times[node], test_set['end_time'][test_set['start_id'] == node])))
+            else:
+                # Start times
+                val_starts = validation_set['start_time'][validation_set['start_id'] == node]
+                test_starts = test_set['start_time'][test_set['start_id'] == node]
+                start_times[node] = np.sort(np.concatenate((self.start_times[node], val_starts, test_starts)))
+                self.N_test[node] = [self.N[node] + len(val_starts), self.N[node] + len(val_starts) + len(test_starts)] 
+                # End times
+                val_ends = validation_set['end_time'][validation_set['start_id'] == node]
+                test_ends = test_set['end_time'][test_set['start_id'] == node]
+                end_times[node] = np.sort(np.concatenate((self.end_times[node], val_ends, test_ends)))
+                self.N_prime_test[node] = [self.N_prime[node] + len(val_ends), self.N_prime[node] + len(val_ends) + len(test_ends)]
         return start_times, end_times
 
     ## Calculate p-values for Poisson process
-    def pvals_poisson_process(self, param, node_index, start_times=None, test_split=False):
+    def pvals_poisson_process(self, param, node_index, start_times=None, test_split=False, validation_split=False):
         if start_times is None:
             start_times = self.start_times
         # Calculate p-values
@@ -419,10 +434,13 @@ class gb_mep:
         if not test_split:
             return pvs
         else:
-            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            if not validation_split:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            else:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:self.N_test[node_index][0]], pvs[self.N_test[node_index][0]:]
 
     ## Calculate p-values for self-exciting process
-    def pvals_sep(self, params, node_index, start_times=None, test_split=False):
+    def pvals_sep(self, params, node_index, start_times=None, test_split=False, validation_split=False):
         if start_times is None:
             start_times = self.start_times
         # Time differences for starting times for node with corresponding index
@@ -437,10 +455,13 @@ class gb_mep:
         if not test_split:
             return pvs
         else:
-            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
-    
+            if not validation_split:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            else:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:self.N_test[node_index][0]], pvs[self.N_test[node_index][0]:]
+
     ## Calculate p-values for mutually exciting process
-    def pvals_mep(self, params, node_index, start_times=None, end_times=None, test_split=False):
+    def pvals_mep(self, params, node_index, start_times=None, end_times=None, test_split=False, validation_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -465,10 +486,13 @@ class gb_mep:
         if not test_split:
             return pvs
         else:
-            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
-    
+            if not validation_split:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            else:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:self.N_test[node_index][0]], pvs[self.N_test[node_index][0]:]
+
     ## Calculate p-values for self-and-mutually exciting process
-    def pvals_smep(self, params, node_index, start_times=None, end_times=None, test_split=False):
+    def pvals_smep(self, params, node_index, start_times=None, end_times=None, test_split=False, validation_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -497,10 +521,13 @@ class gb_mep:
         if not test_split:
             return pvs
         else:
-            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            if not validation_split:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            else:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:self.N_test[node_index][0]], pvs[self.N_test[node_index][0]:]
     
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_start(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False, validation_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -532,10 +559,13 @@ class gb_mep:
         if not test_split:
             return pvs
         else:
-            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            if not validation_split:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            else:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:self.N_test[node_index][0]], pvs[self.N_test[node_index][0]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start_self(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_start_self(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False, validation_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -579,10 +609,13 @@ class gb_mep:
         if not test_split:
             return pvs
         else:
-            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            if not validation_split:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            else:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:self.N_test[node_index][0]], pvs[self.N_test[node_index][0]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False, validation_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -621,10 +654,13 @@ class gb_mep:
         if not test_split:
             return pvs
         else:
-            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            if not validation_split:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            else:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:self.N_test[node_index][0]], pvs[self.N_test[node_index][0]:]
         
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start_nonshared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_start_nonshared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False, validation_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -662,10 +698,13 @@ class gb_mep:
         if not test_split:
             return pvs
         else:
-            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            if not validation_split:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            else:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:self.N_test[node_index][0]], pvs[self.N_test[node_index][0]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_start_self_nonshared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_start_self_nonshared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False, validation_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -713,10 +752,13 @@ class gb_mep:
         if not test_split:
             return pvs
         else:
-            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            if not validation_split:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            else:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:self.N_test[node_index][0]], pvs[self.N_test[node_index][0]:]
 
     ## Calculate p-values for GB-MEP with distance function
-    def pvals_gbmep_nonshared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False):
+    def pvals_gbmep_nonshared(self, params, node_index, subset_nodes, start_times=None, end_times=None, test_split=False, validation_split=False):
         if start_times is None:
             start_times = self.start_times
         if end_times is None:
@@ -763,4 +805,7 @@ class gb_mep:
         if not test_split:
             return pvs
         else:
-            return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            if not validation_split:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:]
+            else:
+                return pvs[:self.N[node_index]], pvs[self.N[node_index]:self.N_test[node_index][0]], pvs[self.N_test[node_index][0]:]

@@ -47,7 +47,7 @@ for file in glob.glob('results/res_gbmep/*.pkl'):
 
 ## Obtain gb_mep object and expand DataFrame with the test set
 G = gb_mep.gb_mep(df=santander_train, id_map=santander_dictionary, distance_matrix=santander_distances)
-start_times, end_times = G.augment_start_times(santander_test)
+start_times, end_times = (G.augment_start_times(sandander_validation)).G.augment_start_times(santander_test)
 
 ## Initialise dictionaries for observed quantiles
 y_poisson_train = {}; y_poisson_test = {}; y_mep_train = {}; y_mep_test = {}; y_sep_train = {}; y_sep_test = {}; y_smep_train = {}; y_smep_test = {}

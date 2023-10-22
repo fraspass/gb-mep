@@ -3,7 +3,9 @@ data/data_processing_2020.py
 data/training
 data/validation
 data/test
+data/santander_distances.npy
 data/santander_t*.csv
+data/santander_validation.csv
 */.DS_Store
 .DS_Store
 lib/gb_mep/__pycache__

@@ -25,7 +25,6 @@ import numpy as np
 import pandas as pd
 santander_train = pd.read_csv('data/santander_train.csv') 
 santander_train.columns = ['end_id', 'start_id', 'end_time', 'start_time']
-santander_test = pd.read_csv('data/santander_test.csv') 
 santander_test.columns = ['end_id', 'start_id', 'end_time', 'start_time']
 santander_distances = np.load('data/santander_distances.npy')
 with open('data/santander_dictionary.pkl', 'rb') as f:
@@ -33,7 +32,6 @@ with open('data/santander_dictionary.pkl', 'rb') as f:
 
 ## Obtain gb_mep object and expand DataFrame with the test set
 G = gb_mep.gb_mep(df=santander_train, id_map=santander_dictionary, distance_matrix=santander_distances)
-start_times, end_times = G.augment_start_times(santander_test)
 
 ## Obtain node subset from the name of the suffix
 lower = int(50*suffix)

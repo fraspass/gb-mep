@@ -25,7 +25,6 @@ import numpy as np
 import pandas as pd
 santander_train = pd.read_csv('data/santander_train.csv') 
 santander_train.columns = ['end_id', 'start_id', 'end_time', 'start_time']
-santander_test.columns = ['end_id', 'start_id', 'end_time', 'start_time']
 santander_distances = np.load('data/santander_distances.npy')
 with open('data/santander_dictionary.pkl', 'rb') as f:
     santander_dictionary = pickle.load(f)

@@ -61,6 +61,32 @@ df = df.sort_values(by='start_time')
 # - Save the resulting DataFrame
 df[['start_id','end_id','start_time','end_time']].to_csv('santander_train.csv', sep=',', columns=None, header=True, index=False)
 
+## Preprocess all validation data files
+# - Obtain all file names for test data
+files = glob.glob('validation/*.csv')
+# - Obtain a DataFrame for each file in a loop
+list_dfs = []
+np.random.seed(171)
+for file in files:
+	# Read the file
+	df_validation = pd.read_csv(file)
+	## FORMAT: Rental Id,Duration,Bike Id,End Date,EndStation Id,EndStation Name,Start Date,StartStation Id,StartStation Name
+	# Transform the stations according to the mapping (for simplicity of processing)
+	df_validation['start_id'] = df_validation['StartStation Name'].transform(lambda x: map_stations[docking_station(x)])
+	df_validation['end_id'] = df_validation['EndStation Name'].transform(lambda x: map_stations[docking_station(x)])
+	# Transform times to minutes since start of the recording period, and add small noise
+	df_validation['start_time'] = df_validation['Start Date'].transform(lambda x: datefy(x, start_date=start_date) / 60 + np.random.uniform())
+	df_validation['end_time'] = df_validation['End Date'].transform(lambda x: datefy(x, start_date=start_date) / 60 + np.random.uniform())
+	# Append all DataFrames in a list (only for selected columns)
+	list_dfs.append(df_validation[['start_id','end_id','start_time','end_time']])
+
+# - Concatenate all DataFrames into a unique DF, and sort by start time
+df_validation = pd.concat(list_dfs, axis=0, ignore_index=True).sort_values(by='start_time')
+# - Save the resulting DataFrame
+df_validation[['start_id','end_id','start_time','end_time']].to_csv('santander_validation.csv', sep=',', columns=None, header=True, index=False)
+# - Delete list of dataframes
+del list_dfs
+
 ## Preprocess all test data files
 # - Obtain all file names for test data
 files = glob.glob('test/*.csv')

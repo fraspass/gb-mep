@@ -59,14 +59,7 @@ for model in y_train:
 # Initialise the subplot function using number of rows and columns 
 fig, ax = plt.subplots(2,3, figsize=(12,8))
 
-#for u in [0,1]:
-#    for v in [1,2]:
-#        ax[u,v].set_yticks([])
-
-#for v in range(3):
-#    ax[0,v].set_xticks([])
-
-for node in y_train['poisson']:
+for node in y_test['poisson']:
     for model in y_train:
         y_train_tot[model] += list(y_train[model][node])
         ks_train_tot[model] += [ks_train[model][node].statistic]
@@ -135,7 +128,6 @@ ax.set_title('Side-by-Side Boxplots')
 # Show the plot
 plt.show()
 
-
 import matplotlib.colors as mcolors
 # Define the custom colormap
 # Define the custom colormap
@@ -170,13 +162,6 @@ plt.show()
 
 # Initialise the subplot function using number of rows and columns 
 fig, ax = plt.subplots(2,3, figsize=(12,8))
-
-#for u in [0,1]:
-#    for v in [1,2]:
-#        ax[u,v].set_yticks([])
-
-#for v in range(3):
-#    ax[0,v].set_xticks([])
 
 for node in y_test['poisson']:
     for model in y_test:

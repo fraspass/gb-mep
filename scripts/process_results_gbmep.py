@@ -73,22 +73,22 @@ for index in G.nodes:
     # Print index and station name
     print('\r', index, '-', G.id_map[index], ' '*20, end='\r')
     # p-values for Poisson process
-    p_poisson_train, p_poisson_validation, p_poisson_test = G.pvals_poisson_process(param=res_pp[index], node_index=index, start_times=start_times, test_split=True)
+    p_poisson_train, p_poisson_validation, p_poisson_test = G.pvals_poisson_process(param=res_pp[index], node_index=index, start_times=start_times, test_split=True, validation_split=True)
     # p-values for MEP
     pp = gb_mep.transform_parameters(res_mep[index].x)
-    p_mep_train, p_mep_validation, p_mep_test = G.pvals_mep(params=pp, node_index=index, start_times=start_times, end_times=end_times, test_split=True)
+    p_mep_train, p_mep_validation, p_mep_test = G.pvals_mep(params=pp, node_index=index, start_times=start_times, end_times=end_times, test_split=True, validation_split=True)
     # p-values for SEP
     pp = gb_mep.transform_parameters(res_sep[index].x)
-    p_sep_train, p_sep_validation, p_sep_test = G.pvals_sep(params=pp, node_index=index, start_times=start_times, test_split=True)
+    p_sep_train, p_sep_validation, p_sep_test = G.pvals_sep(params=pp, node_index=index, start_times=start_times, test_split=True, validation_split=True)
     # p-values for SMEP
     pp = gb_mep.transform_parameters(res_smep[index].x)
-    p_smep_train, p_smep_validation, p_smep_test = G.pvals_smep(params=pp, node_index=index, start_times=start_times, end_times=end_times, test_split=True)
+    p_smep_train, p_smep_validation, p_smep_test = G.pvals_smep(params=pp, node_index=index, start_times=start_times, end_times=end_times, test_split=True, validation_split=True)
     # p-values for GB-MEP with start times only
     pp  = gb_mep.transform_parameters(res_gbmep_start[index].x)
-    p_gbmep_start_train, p_gbmep_start_validation, p_gbmep_start_test = G.pvals_gbmep_start(params=pp, node_index=index, subset_nodes=res_gbmep_start[index].subset_nodes, start_times=start_times, test_split=True)
+    p_gbmep_start_train, p_gbmep_start_validation, p_gbmep_start_test = G.pvals_gbmep_start(params=pp, node_index=index, subset_nodes=res_gbmep_start[index].subset_nodes, start_times=start_times, test_split=True, validation_split=True)
     # p-values for GB-MEP
     pp = gb_mep.transform_parameters(res_gbmep[index].x)
-    p_gbmep_train, p_gbmep_validation, p_gbmep_test = G.pvals_gbmep_start_self(params=pp, node_index=index, subset_nodes=res_gbmep[index].subset_nodes, start_times=start_times, end_times=end_times, test_split=True) 
+    p_gbmep_train, p_gbmep_validation, p_gbmep_test = G.pvals_gbmep_start_self(params=pp, node_index=index, subset_nodes=res_gbmep[index].subset_nodes, start_times=start_times, end_times=end_times, test_split=True, validation_split=True) 
     # Caclulate observed percentiles for training set
     y_poisson_train[index] = np.percentile(a=p_poisson_train, q=x*100)
     y_mep_train[index] = np.percentile(a=p_mep_train, q=x*100)

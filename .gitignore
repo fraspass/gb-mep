@@ -1,6 +1,7 @@
 data/santander_summaries*
 data/data_processing_2020.py
 data/training
+data/validation
 data/test
 data/santander_t*.csv
 */.DS_Store

@@ -599,7 +599,7 @@ class gb_mep:
                 ## Update A and A_prime
                 A[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A)) 
                 if secondary_node == node_index:
-                    A_prime[k] = ((np.exp(-params[4] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[4] * time_diffs_A_prime)) 
+                    A_prime[k] = ((np.exp(-params[5] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A_prime)) 
             ## Update A and A_prime terms for calculation of differences between conpensators
             A_terms += np.exp(-params[3] * ds[secondary_node]) * params[1] / params[2] * (np.insert(arr=np.diff(A), obj=0, values=A[0]) - start_breaks_diff)
             if secondary_node == node_index:
@@ -645,7 +645,7 @@ class gb_mep:
                     time_diffs_A_prime = t - end_times[secondary_node][:end_breaks[k]]
                 ## Update A and A_prime
                 A[k] = ((np.exp(-params[2] * time_diffs[k-1]) * A[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[2] * time_diffs_A)) 
-                A_prime[k] = ((np.exp(-params[4] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[4] * time_diffs_A_prime)) 
+                A_prime[k] = ((np.exp(-params[5] * time_diffs[k-1]) * A_prime[k-1]) if k > 0 else 0) + np.sum(np.exp(-params[5] * time_diffs_A_prime)) 
             ## Update A and A_prime terms for calculation of differences between conpensators
             A_terms += np.exp(-params[3] * ds[secondary_node]) * params[1] / params[2] * (np.insert(arr=np.diff(A), obj=0, values=A[0]) - start_breaks_diff)
             A_prime_terms += np.exp(-params[6] * ds[secondary_node]) * params[4] / params[5] * (np.insert(arr=np.diff(A_prime), obj=0, values=A_prime[0]) - end_breaks_diff)

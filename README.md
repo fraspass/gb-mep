@@ -31,6 +31,7 @@ python3 data_processing.py
 ```
 If the library `gb_mep` has been installed as described above, all libraries required for the preprocessing should already be installed. The output of the script consists in four files, stored in `data`:
 - `santander_training.csv`, containing a preprocessed DataFrame with the training set data;
+- `santander_validation.csv`, containing a preprocessed DataFrame with the validation set data;
 - `santander_test.csv`, containing a preprocessed DataFrame with the test set data;
 - `santander_dictionary.pkl`, containing a dictionary with the mapping of integers to station names and viceversa (useful to match numbers in the previous files to station names);
 - `santander_locations.npy`, containing a Numpy array containing distances between station, with the same encoding of rows and columns found in the `santander_dictionary.pkl` file. 

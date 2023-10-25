@@ -8,7 +8,7 @@ This repository contains the Python library `gb_mep`, which supports the paper *
 * `scripts` contains scripts to reproduce the parameter estimates obtained in the paper.
 * `results` contains `.pkl` files containing the parameter estimates obtained from the data used in the paper. 
 
-The _Python_ library can be installed in edit mode as follows:
+The _Python_ library `gb_mep` can be installed in edit mode as follows:
 ```
 pip install -e lib/
 ```

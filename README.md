@@ -4,7 +4,7 @@ This repository contains the Python library `gb_mep`, which supports the paper *
 
 * `lib` contains the _Python_ library, with code to implement and fit GB-MEPs to graphs of point processes.
 * `notebooks` contains Jupyter notebooks with examples on how to use the `gb_mep` library.
-* `data` contains scripts to download the Santander Cycles data used in the paper. Row data files are *not* managed under version control, so you should follow the instructions below to obtain the preprocessed version of the data.
+* `data` contains scripts to download the Santander Cycles data used in the paper. Raw data files are *not* managed under version control, so you should follow the instructions below to obtain the preprocessed version of the data.
 * `scripts` contains scripts to reproduce the parameter estimates obtained in the paper.
 * `results` contains `.pkl` files containing the parameter estimates obtained from the data used in the paper. 
 

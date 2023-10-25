@@ -35,3 +35,11 @@ If the library `gb_mep` has been installed as described above, all libraries req
 - `santander_test.csv`, containing a preprocessed DataFrame with the test set data;
 - `santander_dictionary.pkl`, containing a dictionary with the mapping of integers to station names and viceversa (useful to match numbers in the previous files to station names);
 - `santander_locations.npy`, containing a Numpy array containing distances between station, with the same encoding of rows and columns found in the `santander_dictionary.pkl` file. 
+
+A previous version of the data (not used in the paper) can be obtained and preprocessed using the scripts labelled with `2020` in the directory `data`:
+```
+cd data
+bash get_data.sh
+python3 data_processing.py
+```
+The output of the script consists in four files, stored in `data`:

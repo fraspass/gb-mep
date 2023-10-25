@@ -16,7 +16,7 @@ Alternatively, `pip3` can also be used. After installation, the library can then
 ```python3
 import gb_mep
 ```
-A demo on how to use the library with the Santander Cycles data can be found in `notebooks/Santander_Cycles.ipynb`.
+A demo on how to use the library with the Santander Cycles data can be found in `notebooks/Santander_Cycles.ipynb` and `notebooks/Santander_Cycles_2020.ipynb`.
 
 ## Santander Cycles data: downloading and preprocessing
 The Santander Cycles data can be downloaded from the [TfL Cycling Data Repository](https://cycling.data.tfl.gov.uk/) (see the [terms of service](https://tfl.gov.uk/corporate/terms-and-conditions/transport-data-service)) by navigating to the directory `data` in this repository, and running the script `get_data.sh` as detailed below. The files will be stored in `.csv` files in two directories: `data/training` and `data/test`. 

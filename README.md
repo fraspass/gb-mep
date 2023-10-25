@@ -42,4 +42,4 @@ cd data
 bash get_data.sh
 python3 data_processing.py
 ```
-The output of the script consists in four files, stored in `data`:
+The output of the script consists in files stored in a directory `santander_summaries` and its subdirectory `santander_summaries_preprocessed`. 

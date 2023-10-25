@@ -85,7 +85,6 @@ for node in y_test['poisson']:
         ks_test_tot[model] += [ks_test[model][node].statistic]
         cvm_test_tot[model] += [cvm_test[model][node]]
 
-
 ks_validation_array = np.zeros((len(ks_validation_tot['poisson']), 6))
 for k, model in enumerate(ks_validation_tot):
     ks_validation_array[:,k] = ks_validation_tot[model]

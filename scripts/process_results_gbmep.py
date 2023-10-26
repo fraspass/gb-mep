@@ -12,7 +12,6 @@ import pickle
 import numpy as np
 import pandas as pd
 santander_train = pd.read_csv('data/santander_train.csv') 
-santander_validation = pd.read_csv('data/santander_validation.csv')
 santander_test = pd.read_csv('data/santander_test.csv') 
 santander_distances = np.load('data/santander_distances.npy')
 with open('data/santander_dictionary.pkl', 'rb') as f:
@@ -54,21 +53,18 @@ for file in glob.glob('results/res_gbmep_full/*.pkl'):
 
 ## Obtain gb_mep object and expand DataFrame with the test set
 G = gb_mep.gb_mep(df=santander_train, id_map=santander_dictionary, distance_matrix=santander_distances)
-start_times, end_times = G.augment_start_times(test_set=santander_test, validation_set=santander_validation)
+start_times, end_times = G.augment_start_times(test_set=santander_test)
 
 ## Initialise dictionaries for observed quantiles
 y_poisson_train = {}; y_mep_train = {}; y_sep_train = {}; y_smep_train = {}; y_gbmep_start_train = {}; y_gbmep_train = {}; y_gbmep_full_train = {}
-y_poisson_validation = {}; y_mep_validation = {}; y_sep_validation = {}; y_smep_validation = {}; y_gbmep_start_validation = {}; y_gbmep_validation = {}; y_gbmep_full_validation = {}
 y_poisson_test = {}; y_mep_test = {}; y_sep_test = {}; y_smep_test = {}; y_gbmep_start_test = {}; y_gbmep_test = {}; y_gbmep_full_test = {}
 
 ## Intialise dictionaries for KS scores
 ks_poisson_train = {}; ks_mep_train = {}; ks_sep_train = {}; ks_smep_train = {}; ks_gbmep_start_train = {}; ks_gbmep_train = {}; ks_gbmep_full_train = {}
-ks_poisson_validation = {}; ks_mep_validation = {}; ks_sep_validation = {}; ks_smep_validation = {}; ks_gbmep_start_validation = {}; ks_gbmep_validation = {}; ks_gbmep_full_validation = {}
 ks_poisson_test = {}; ks_mep_test = {}; ks_sep_test = {}; ks_smep_test = {}; ks_gbmep_start_test = {}; ks_gbmep_test = {}; ks_gbmep_full_test = {}
 
 ## Intialise dictionaries for Cramér-von Mises scores
 cvm_poisson_train = {}; cvm_mep_train = {}; cvm_sep_train = {}; cvm_smep_train = {}; cvm_gbmep_start_train = {}; cvm_gbmep_train = {}; cvm_gbmep_full_train = {}
-cvm_poisson_validation = {}; cvm_mep_validation = {}; cvm_sep_validation = {}; cvm_smep_validation = {}; cvm_gbmep_start_validation = {}; cvm_gbmep_validation = {}; cvm_gbmep_full_validation = {}
 cvm_poisson_test = {}; cvm_mep_test = {}; cvm_sep_test = {}; cvm_smep_test = {}; cvm_gbmep_start_test = {}; cvm_gbmep_test = {}; cvm_gbmep_full_test = {}
 
 ## Define theoretical quantiles
@@ -79,25 +75,25 @@ for index in G.nodes:
     # Print index and station name
     print('\r', index, '-', G.id_map[index], ' '*20, end='\r')
     # p-values for Poisson process
-    p_poisson_train, p_poisson_validation, p_poisson_test = G.pvals_poisson_process(param=res_pp[index], node_index=index, start_times=start_times, test_split=True, validation_split=True)
+    p_poisson_train, p_poisson_test = G.pvals_poisson_process(param=res_pp[index], node_index=index, start_times=start_times, test_split=True, validation_split=False)
     # p-values for MEP
     pp = gb_mep.transform_parameters(res_mep[index].x)
-    p_mep_train, p_mep_validation, p_mep_test = G.pvals_mep(params=pp, node_index=index, start_times=start_times, end_times=end_times, test_split=True, validation_split=True)
+    p_mep_train, p_mep_test = G.pvals_mep(params=pp, node_index=index, start_times=start_times, end_times=end_times, test_split=True, validation_split=False)
     # p-values for SEP
     pp = gb_mep.transform_parameters(res_sep[index].x)
-    p_sep_train, p_sep_validation, p_sep_test = G.pvals_sep(params=pp, node_index=index, start_times=start_times, test_split=True, validation_split=True)
+    p_sep_train, p_sep_test = G.pvals_sep(params=pp, node_index=index, start_times=start_times, test_split=True, validation_split=False)
     # p-values for SMEP
     pp = gb_mep.transform_parameters(res_smep[index].x)
-    p_smep_train, p_smep_validation, p_smep_test = G.pvals_smep(params=pp, node_index=index, start_times=start_times, end_times=end_times, test_split=True, validation_split=True)
+    p_smep_train, p_smep_test = G.pvals_smep(params=pp, node_index=index, start_times=start_times, end_times=end_times, test_split=True, validation_split=False)
     # p-values for GB-MEP with start times only
     pp  = gb_mep.transform_parameters(res_gbmep_start[index].x)
-    p_gbmep_start_train, p_gbmep_start_validation, p_gbmep_start_test = G.pvals_gbmep_start(params=pp, node_index=index, subset_nodes=res_gbmep_start[index].subset_nodes, start_times=start_times, test_split=True, validation_split=True)
+    p_gbmep_start_train, p_gbmep_start_test = G.pvals_gbmep_start(params=pp, node_index=index, subset_nodes=res_gbmep_start[index].subset_nodes, start_times=start_times, test_split=True, validation_split=False)
     # p-values for GB-MEP
     pp = gb_mep.transform_parameters(res_gbmep[index].x)
-    p_gbmep_train, p_gbmep_validation, p_gbmep_test = G.pvals_gbmep_start_self(params=pp, node_index=index, subset_nodes=res_gbmep[index].subset_nodes, start_times=start_times, end_times=end_times, test_split=True, validation_split=True) 
+    p_gbmep_train, p_gbmep_test = G.pvals_gbmep_start_self(params=pp, node_index=index, subset_nodes=res_gbmep[index].subset_nodes, start_times=start_times, end_times=end_times, test_split=True, validation_split=False) 
     # p-values for GB-MEP (full)
     pp = gb_mep.transform_parameters(res_gbmep_full[index].x)
-    p_gbmep_full_train, p_gbmep_full_validation, p_gbmep_full_test = G.pvals_gbmep(params=pp, node_index=index, subset_nodes=res_gbmep_full[index].subset_nodes, start_times=start_times, end_times=end_times, test_split=True, validation_split=True)
+    p_gbmep_full_train, p_gbmep_full_test = G.pvals_gbmep(params=pp, node_index=index, subset_nodes=res_gbmep_full[index].subset_nodes, start_times=start_times, end_times=end_times, test_split=True, validation_split=False)
     # Caclulate observed percentiles for training set
     y_poisson_train[index] = np.percentile(a=p_poisson_train, q=x*100)
     y_mep_train[index] = np.percentile(a=p_mep_train, q=x*100)
@@ -106,15 +102,6 @@ for index in G.nodes:
     y_gbmep_start_train[index] = np.percentile(a=p_gbmep_start_train, q=x*100)
     y_gbmep_train[index] = np.percentile(a=p_gbmep_train, q=x*100)
     y_gbmep_full_train[index] = np.percentile(a=p_gbmep_full_train, q=x*100)
-    # Caclulate observed percentiles for validation set
-    if len(p_poisson_validation) > 0:
-        y_poisson_validation[index] = np.percentile(a=p_poisson_validation, q=x*100)
-        y_mep_validation[index] = np.percentile(a=p_mep_validation, q=x*100)
-        y_sep_validation[index] = np.percentile(a=p_sep_validation, q=x*100)
-        y_smep_validation[index] = np.percentile(a=p_smep_validation, q=x*100)
-        y_gbmep_start_validation[index] = np.percentile(a=p_gbmep_start_validation, q=x*100)
-        y_gbmep_validation[index] = np.percentile(a=p_gbmep_validation, q=x*100)
-        y_gbmep_full_validation[index] = np.percentile(a=p_gbmep_full_validation, q=x*100)
     # Caclulate observed percentiles for test set
     if len(p_poisson_test) > 0:
         y_poisson_test[index] = np.percentile(a=p_poisson_test, q=x*100)
@@ -132,15 +119,6 @@ for index in G.nodes:
     ks_gbmep_start_train[index] = stats.kstest(p_gbmep_start_train, stats.uniform.cdf)
     ks_gbmep_train[index] = stats.kstest(p_gbmep_train, stats.uniform.cdf)
     ks_gbmep_full_train[index] = stats.kstest(p_gbmep_full_train, stats.uniform.cdf)
-    # Calculate KS statistic for validation set
-    if len(p_poisson_validation) > 0:
-        ks_poisson_validation[index] = stats.kstest(p_poisson_validation, stats.uniform.cdf)
-        ks_mep_validation[index] = stats.kstest(p_mep_validation, stats.uniform.cdf)
-        ks_sep_validation[index] = stats.kstest(p_sep_validation, stats.uniform.cdf)
-        ks_smep_validation[index] = stats.kstest(p_smep_validation, stats.uniform.cdf)
-        ks_gbmep_start_validation[index] = stats.kstest(p_gbmep_start_validation, stats.uniform.cdf)
-        ks_gbmep_validation[index] = stats.kstest(p_gbmep_validation, stats.uniform.cdf)
-        ks_gbmep_full_validation[index] = stats.kstest(p_gbmep_full_validation, stats.uniform.cdf)
     # Calculate KS statistic for test set
     if len(p_poisson_test) > 0:
         ks_poisson_test[index] = stats.kstest(p_poisson_test, stats.uniform.cdf)
@@ -158,24 +136,15 @@ for index in G.nodes:
     cvm_gbmep_start_train[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_start_train, cdf=stats.uniform.cdf).statistic / G.N[index])
     cvm_gbmep_train[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_train, cdf=stats.uniform.cdf).statistic / G.N[index])
     cvm_gbmep_full_train[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_full_train, cdf=stats.uniform.cdf).statistic / G.N[index])
-    # Calculate Cramér-von Mises for validation set
-    if len(p_poisson_validation) > 0:
-        cvm_poisson_validation[index] = np.sqrt(stats.cramervonmises(rvs=p_poisson_validation, cdf=stats.uniform.cdf).statistic / (G.N_test[index][0]-G.N[index]))
-        cvm_mep_validation[index] = np.sqrt(stats.cramervonmises(rvs=p_mep_validation, cdf=stats.uniform.cdf).statistic / (G.N_test[index][0]-G.N[index]))
-        cvm_sep_validation[index] = np.sqrt(stats.cramervonmises(rvs=p_sep_validation, cdf=stats.uniform.cdf).statistic / (G.N_test[index][0]-G.N[index]))
-        cvm_smep_validation[index] = np.sqrt(stats.cramervonmises(rvs=p_smep_validation, cdf=stats.uniform.cdf).statistic / (G.N_test[index][0]-G.N[index]))
-        cvm_gbmep_start_validation[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_start_validation, cdf=stats.uniform.cdf).statistic / (G.N_test[index][0]-G.N[index]))
-        cvm_gbmep_validation[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_validation, cdf=stats.uniform.cdf).statistic / (G.N_test[index][0]-G.N[index]))
-        cvm_gbmep_full_validation[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_full_validation, cdf=stats.uniform.cdf).statistic / (G.N_test[index][0]-G.N[index]))
     # Calculate Cramér-von Mises for test set
     if len(p_poisson_test) > 0:
-        cvm_poisson_test[index] = np.sqrt(stats.cramervonmises(rvs=p_poisson_test, cdf=stats.uniform.cdf).statistic / (G.N_test[index][1]-G.N_test[index][0]))
-        cvm_mep_test[index] = np.sqrt(stats.cramervonmises(rvs=p_mep_test, cdf=stats.uniform.cdf).statistic / (G.N_test[index][1]-G.N_test[index][0]))
-        cvm_sep_test[index] = np.sqrt(stats.cramervonmises(rvs=p_sep_test, cdf=stats.uniform.cdf).statistic / (G.N_test[index][1]-G.N_test[index][0]))
-        cvm_smep_test[index] = np.sqrt(stats.cramervonmises(rvs=p_smep_test, cdf=stats.uniform.cdf).statistic / (G.N_test[index][1]-G.N_test[index][0]))
-        cvm_gbmep_start_test[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_start_test, cdf=stats.uniform.cdf).statistic / (G.N_test[index][1]-G.N_test[index][0]))
-        cvm_gbmep_test[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_test, cdf=stats.uniform.cdf).statistic / (G.N_test[index][1]-G.N_test[index][0]))
-        cvm_gbmep_full_test[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_full_test, cdf=stats.uniform.cdf).statistic / (G.N_test[index][1]-G.N_test[index][0]))
+        cvm_poisson_test[index] = np.sqrt(stats.cramervonmises(rvs=p_poisson_test, cdf=stats.uniform.cdf).statistic / (len(start_times[index])-G.N[index]))
+        cvm_mep_test[index] = np.sqrt(stats.cramervonmises(rvs=p_mep_test, cdf=stats.uniform.cdf).statistic / (len(start_times[index])-G.N[index]))
+        cvm_sep_test[index] = np.sqrt(stats.cramervonmises(rvs=p_sep_test, cdf=stats.uniform.cdf).statistic / (len(start_times[index])-G.N[index]))
+        cvm_smep_test[index] = np.sqrt(stats.cramervonmises(rvs=p_smep_test, cdf=stats.uniform.cdf).statistic / (len(start_times[index])-G.N[index]))
+        cvm_gbmep_start_test[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_start_test, cdf=stats.uniform.cdf).statistic / (len(start_times[index])-G.N[index]))
+        cvm_gbmep_test[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_test, cdf=stats.uniform.cdf).statistic / (len(start_times[index])-G.N[index]))
+        cvm_gbmep_full_test[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_full_test, cdf=stats.uniform.cdf).statistic / (len(start_times[index])-G.N[index]))
 
 ## Save the results
 y_train = {}; ks_train = {}; cvm_train = {}
@@ -188,13 +157,6 @@ ks_train['poisson'] = ks_poisson_train; ks_train['mep'] = ks_mep_train; ks_train
 ks_train['gbmep_start'] = ks_gbmep_start_train; ks_train['gbmep'] = ks_gbmep_train; ks_train['gbmep_full'] = ks_gbmep_full_train
 cvm_train['poisson'] = cvm_poisson_train; cvm_train['mep'] = cvm_mep_train; cvm_train['sep'] = cvm_sep_train; cvm_train['smep'] = cvm_smep_train
 cvm_train['gbmep_start'] = cvm_gbmep_start_train; cvm_train['gbmep'] = cvm_gbmep_train; cvm_train['gbmep_full'] = cvm_gbmep_full_train
-# Validation
-y_validation['poisson'] = y_poisson_validation; y_validation['mep'] = y_mep_validation; y_validation['sep'] = y_sep_validation; y_validation['smep'] = y_smep_validation
-y_validation['gbmep_start'] = y_gbmep_start_validation; y_validation['gbmep'] = y_gbmep_validation; y_validation['gbmep_full'] = y_gbmep_full_validation
-ks_validation['poisson'] = ks_poisson_validation; ks_validation['mep'] = ks_mep_validation; ks_validation['sep'] = ks_sep_validation; ks_validation['smep'] = ks_smep_validation
-ks_validation['gbmep_start'] = ks_gbmep_start_validation; ks_validation['gbmep'] = ks_gbmep_validation; ks_validation['gbmep_full'] = ks_gbmep_full_validation
-cvm_validation['poisson'] = cvm_poisson_validation; cvm_validation['mep'] = cvm_mep_validation; cvm_validation['sep'] = cvm_sep_validation; cvm_validation['smep'] = cvm_smep_validation
-cvm_validation['gbmep_start'] = cvm_gbmep_start_validation; cvm_validation['gbmep'] = cvm_gbmep_validation; cvm_validation['gbmep_full'] = cvm_gbmep_full_validation
 # Test
 y_test['poisson'] = y_poisson_test; y_test['mep'] = y_mep_test; y_test['sep'] = y_sep_test; y_test['smep'] = y_smep_test
 y_test['gbmep_start'] = y_gbmep_start_test; y_test['gbmep'] = y_gbmep_test; y_test['gbmep_full'] = y_gbmep_full_test
@@ -214,12 +176,6 @@ with open('results/res_qq_start/ks_train.pkl', 'wb') as f:
     pickle.dump(ks_train, f)
 with open('results/res_qq_start/cvm_train.pkl', 'wb') as f:
     pickle.dump(cvm_train, f)
-with open('results/res_qq_start/y_validation.pkl', 'wb') as f:
-    pickle.dump(y_validation, f)
-with open('results/res_qq_start/ks_validation.pkl', 'wb') as f:
-    pickle.dump(ks_validation, f)
-with open('results/res_qq_start/cvm_validation.pkl', 'wb') as f:
-    pickle.dump(cvm_validation, f)
 with open('results/res_qq_start/y_test.pkl', 'wb') as f:
     pickle.dump(y_test, f)
 with open('results/res_qq_start/ks_test.pkl', 'wb') as f:

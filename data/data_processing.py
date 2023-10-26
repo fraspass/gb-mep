@@ -8,6 +8,37 @@ from sklearn.metrics.pairwise import haversine_distances as haversine
 from math import radians
 import pickle 
 
+## Calculate Haversine distance matrix between stations
+# - Import stations and locations (and sort in alphabetical order - the file is not sorted, even though it looks like it is!)
+locations = pd.read_csv('santander_locations.csv',quotechar='"').sort_values('StationName')
+# - Earth radius
+re = 6365.079
+# - Transform latitude and longitude in degrees to radians
+locations['latitude_radians'] = locations['latitude'].transform(lambda x: radians(float(x)))
+locations['longitude_radians'] = locations['longitude'].transform(lambda x: radians(float(x)))
+# - Obtain the distance matrix
+H = haversine(locations[['latitude_radians','longitude_radians']]) * re
+# - Save resulting Numpy array
+np.save('santander_distances.npy', arr=H)
+# Find repeated stations (stations with the same latitude and longitude)
+repeated_stations = np.where((H == 0.0).sum(axis=1) != 1) ## (array([ 62,  63, 175, 176, 347, 348, 487, 488, 601, 602, 655, 656, 768, 769, 770]),)
+# Merge stations with identical locations
+repeated_indices = [63, 176, 348, 488, 602, 656, 769, 770]
+H = np.delete(H, repeated_indices, axis=0)
+H = np.delete(H, repeated_indices, axis=1)
+# - Create a mapping (and its inverse) from a station name to a number (in alphabetical order)
+map_stations = {}
+k = 0
+for id, station in enumerate(sorted(set(locations['StationName']))):
+	map_stations[station] = k 
+	if id not in repeated_indices:
+		map_stations[k] = station
+		k += 1
+
+# - Save resulting dictionary
+with open('santander_dictionary.pkl', 'wb') as f:
+    pickle.dump(map_stations, f)
+
 ## Start date in entire dataset is 02/03/2022
 start_date = int(datetime(2022,3,2,0,0).replace(tzinfo=timezone.utc).timestamp())
 ## Function to transform a string x in datetime format with a specific start date and splitting delimiters
@@ -42,13 +73,6 @@ def docking_station(x):
 files = glob.glob('training/*.csv')
 # - Concatenate in a unique Pandas DataFrame
 df = pd.concat((pd.read_csv(f) for f in files), ignore_index=True)
-# - Create a mapping (and its inverse) from a station name to a number (in alphabetical order)
-ms1 = [(y,x) for x,y in enumerate(sorted(set(pd.read_csv('santander_locations.csv')['StationName'])))]
-ms2 = [(x,y) for x,y in enumerate(sorted(set(pd.read_csv('santander_locations.csv')['StationName'])))]
-map_stations = dict(ms1 + ms2)
-# - Save resulting dictionary
-with open('santander_dictionary.pkl', 'wb') as f:
-    pickle.dump(map_stations, f)
 # - Transform the stations according to the mapping (for simplicity of processing)
 df['start_id'] = df['StartStation Name'].transform(lambda x: map_stations[docking_station(x)])
 df['end_id'] = df['EndStation Name'].transform(lambda x: map_stations[docking_station(x)])
@@ -60,32 +84,6 @@ df['end_time'] = df['End Date'].transform(lambda x: datefy(x, start_date=start_d
 df = df.sort_values(by='start_time')
 # - Save the resulting DataFrame
 df[['start_id','end_id','start_time','end_time']].to_csv('santander_train.csv', sep=',', columns=None, header=True, index=False)
-
-## Preprocess all validation data files
-# - Obtain all file names for test data
-files = glob.glob('validation/*.csv')
-# - Obtain a DataFrame for each file in a loop
-list_dfs = []
-np.random.seed(171)
-for file in files:
-	# Read the file
-	df_validation = pd.read_csv(file)
-	## FORMAT: Rental Id,Duration,Bike Id,End Date,EndStation Id,EndStation Name,Start Date,StartStation Id,StartStation Name
-	# Transform the stations according to the mapping (for simplicity of processing)
-	df_validation['start_id'] = df_validation['StartStation Name'].transform(lambda x: map_stations[docking_station(x)])
-	df_validation['end_id'] = df_validation['EndStation Name'].transform(lambda x: map_stations[docking_station(x)])
-	# Transform times to minutes since start of the recording period, and add small noise
-	df_validation['start_time'] = df_validation['Start Date'].transform(lambda x: datefy(x, start_date=start_date) / 60 + np.random.uniform())
-	df_validation['end_time'] = df_validation['End Date'].transform(lambda x: datefy(x, start_date=start_date) / 60 + np.random.uniform())
-	# Append all DataFrames in a list (only for selected columns)
-	list_dfs.append(df_validation[['start_id','end_id','start_time','end_time']])
-
-# - Concatenate all DataFrames into a unique DF, and sort by start time
-df_validation = pd.concat(list_dfs, axis=0, ignore_index=True).sort_values(by='start_time')
-# - Save the resulting DataFrame
-df_validation[['start_id','end_id','start_time','end_time']].to_csv('santander_validation.csv', sep=',', columns=None, header=True, index=False)
-# - Delete list of dataframes
-del list_dfs
 
 ## Preprocess all test data files
 # - Obtain all file names for test data
@@ -126,16 +124,3 @@ df_test = pd.concat(list_dfs, axis=0, ignore_index=True).sort_values(by='start_t
 df_test[['start_id','end_id','start_time','end_time']].to_csv('santander_test.csv', sep=',', columns=None, header=True, index=False)
 # - Delete list of dataframes
 del list_dfs
-
-## Calculate Haversine distance matrix between stations
-# - Import stations and locations (and sort in alphabetical order - the file is not sorted, even though it looks like it is!)
-locations = pd.read_csv('santander_locations.csv',quotechar='"').sort_values('StationName')
-# - Earth radius
-re = 6365.079
-# - Transform latitude and longitude in degrees to radians
-locations['latitude_radians'] = locations['latitude'].transform(lambda x: radians(float(x)))
-locations['longitude_radians'] = locations['longitude'].transform(lambda x: radians(float(x)))
-# - Obtain the distance matrix
-H = haversine(locations[['latitude_radians','longitude_radians']]) * re
-# - Save resulting Numpy array
-np.save('santander_distances.npy', arr=H)

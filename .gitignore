@@ -1,3 +1,7 @@
+scripts/*_end.*
+results/*_end
+results/*_end.*
+plots/*_end.*
 data/santander_summaries*
 data/data_processing_2020.py
 data/training

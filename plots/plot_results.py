@@ -22,6 +22,9 @@ G = gb_mep.gb_mep(df=santander_train, id_map=santander_dictionary, distance_matr
 start_times, end_times = G.augment_start_times(test_set=santander_test)
 
 ## Load .pkl files
+with open('results/res_qq_start/pv_train.pkl', 'rb') as f:
+    pv_train = pickle.load(f)
+
 with open('results/res_qq_start/y_train.pkl', 'rb') as f:
     y_train = pickle.load(f)
 
@@ -30,6 +33,9 @@ with open('results/res_qq_start/ks_train.pkl', 'rb') as f:
 
 with open('results/res_qq_start/cvm_train.pkl', 'rb') as f:
     cvm_train = pickle.load(f)
+
+with open('results/res_qq_start/pv_test.pkl', 'rb') as f:
+    pv_test = pickle.load(f)
 
 with open('results/res_qq_start/y_test.pkl', 'rb') as f:
     y_test = pickle.load(f)
@@ -50,28 +56,35 @@ rc('text', usetex=True)
 x = np.linspace(start=0, stop=1, num=501, endpoint=False)[1:]
 
 # Define empty lists
+pv_train_tot = {}; pv_test_tot = {}
 y_train_tot = {}; y_test_tot = {}
 ks_train_tot = {}; ks_test_tot = {}
 cvm_train_tot = {}; cvm_test_tot = {}
 for model in y_train:
-    y_train_tot[model] = []; ks_train_tot[model] = []; cvm_train_tot[model] = []
-    y_test_tot[model] = []; ks_test_tot[model] = []; cvm_test_tot[model] = []
+    pv_train_tot[model] = []; y_train_tot[model] = []; ks_train_tot[model] = []; cvm_train_tot[model] = []
+    pv_test_tot[model] = []; y_test_tot[model] = []; ks_test_tot[model] = []; cvm_test_tot[model] = []
 
 for node in y_test['poisson']:
     for model in y_train:
+        pv_train_tot[model] += list(pv_train[model][node])
         y_train_tot[model] += list(y_train[model][node])
         ks_train_tot[model] += [ks_train[model][node].statistic]
         cvm_train_tot[model] += [cvm_train[model][node]]
 
 for node in y_test['poisson']:
     for model in y_test:
+        pv_test_tot[model] += list(pv_test[model][node])
         y_test_tot[model] += list(y_test[model][node])
         ks_test_tot[model] += [ks_test[model][node].statistic]
         cvm_test_tot[model] += [cvm_test[model][node]]
 
 print('Training set - KS scores for all stations')
 for model in y_train_tot:
-    print(stats.kstest(y_train_tot[model], stats.uniform.cdf).statistic)
+    print(model, stats.kstest(pv_train_tot[model], stats.uniform.cdf).statistic)
+
+print('Test set - KS scores for all stations')
+for model in y_test_tot:
+    print(model, stats.kstest(pv_test_tot[model], stats.uniform.cdf).statistic)
 
 ks_test_array = np.zeros((len(ks_test_tot['poisson']), 7))
 for k, model in enumerate(ks_test_tot):

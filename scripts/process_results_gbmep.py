@@ -77,25 +77,32 @@ for index in G.nodes:
     # Print index and station name
     print('\r', index, '-', G.id_map[index], ' '*20, end='\r')
     # p-values for Poisson process
-    p_poisson_train[index], p_poisson_test[index] = G.pvals_poisson_process(param=res_pp[index], node_index=index, start_times=start_times, test_split=True, validation_split=False)
+    p1, p2 = G.pvals_poisson_process(param=res_pp[index], node_index=index, start_times=start_times, test_split=True, validation_split=False)
+    p_poisson_train[index], p_poisson_test[index] = p1, p2
     # p-values for MEP
     pp = gb_mep.transform_parameters(res_mep[index].x)
-    p_mep_train[index], p_mep_test[index] = G.pvals_mep(params=pp, node_index=index, start_times=start_times, end_times=end_times, test_split=True, validation_split=False)
+    p1, p2 = G.pvals_mep(params=pp, node_index=index, start_times=start_times, end_times=end_times, test_split=True, validation_split=False)
+    p_mep_train[index], p_mep_test[index] = p1, p2
     # p-values for SEP
     pp = gb_mep.transform_parameters(res_sep[index].x)
-    p_sep_train[index], p_sep_test[index] = G.pvals_sep(params=pp, node_index=index, start_times=start_times, test_split=True, validation_split=False)
+    p1, p2 = G.pvals_sep(params=pp, node_index=index, start_times=start_times, test_split=True, validation_split=False)
+    p_sep_train[index], p_sep_test[index] = p1, p2
     # p-values for SMEP
     pp = gb_mep.transform_parameters(res_smep[index].x)
-    p_smep_train[index], p_smep_test[index] = G.pvals_smep(params=pp, node_index=index, start_times=start_times, end_times=end_times, test_split=True, validation_split=False)
+    p1, p2 = G.pvals_smep(params=pp, node_index=index, start_times=start_times, end_times=end_times, test_split=True, validation_split=False)
+    p_smep_train[index], p_smep_test[index] = p1, p2
     # p-values for GB-MEP with start times only
     pp  = gb_mep.transform_parameters(res_gbmep_start[index].x)
-    p_gbmep_start_train[index], p_gbmep_start_test[index] = G.pvals_gbmep_start(params=pp, node_index=index, subset_nodes=res_gbmep_start[index].subset_nodes, start_times=start_times, test_split=True, validation_split=False)
+    p1, p2 = G.pvals_gbmep_start(params=pp, node_index=index, subset_nodes=res_gbmep_start[index].subset_nodes, start_times=start_times, test_split=True, validation_split=False)
+    p_gbmep_start_train[index], p_gbmep_start_test[index] = p1, p2
     # p-values for GB-MEP
     pp = gb_mep.transform_parameters(res_gbmep[index].x)
-    p_gbmep_train[index], p_gbmep_test[index] = G.pvals_gbmep_start_self(params=pp, node_index=index, subset_nodes=res_gbmep[index].subset_nodes, start_times=start_times, end_times=end_times, test_split=True, validation_split=False) 
+    p1, p2 = G.pvals_gbmep_start_self(params=pp, node_index=index, subset_nodes=res_gbmep[index].subset_nodes, start_times=start_times, end_times=end_times, test_split=True, validation_split=False) 
+    p_gbmep_train[index], p_gbmep_test[index] = p1, p2
     # p-values for GB-MEP (full)
     pp = gb_mep.transform_parameters(res_gbmep_full[index].x)
-    p_gbmep_full_train[index], p_gbmep_full_test[index] = G.pvals_gbmep(params=pp, node_index=index, subset_nodes=res_gbmep_full[index].subset_nodes, start_times=start_times, end_times=end_times, test_split=True, validation_split=False)
+    p1, p2 = G.pvals_gbmep(params=pp, node_index=index, subset_nodes=res_gbmep_full[index].subset_nodes, start_times=start_times, end_times=end_times, test_split=True, validation_split=False)
+    p_gbmep_full_train[index], p_gbmep_full_test[index] = p1, p2
     # Calculate observed percentiles for training set
     y_poisson_train[index] = np.percentile(a=p_poisson_train[index], q=x*100)
     y_mep_train[index] = np.percentile(a=p_mep_train[index], q=x*100)
@@ -105,7 +112,7 @@ for index in G.nodes:
     y_gbmep_train[index] = np.percentile(a=p_gbmep_train[index], q=x*100)
     y_gbmep_full_train[index] = np.percentile(a=p_gbmep_full_train[index], q=x*100)
     # Calculate observed percentiles for test set
-    if len(p_poisson_test) > 0:
+    if len(p_poisson_test[index]) > 0:
         y_poisson_test[index] = np.percentile(a=p_poisson_test[index], q=x*100)
         y_mep_test[index] = np.percentile(a=p_mep_test[index], q=x*100)
         y_sep_test[index] = np.percentile(a=p_sep_test[index], q=x*100)
@@ -122,7 +129,7 @@ for index in G.nodes:
     ks_gbmep_train[index] = stats.kstest(p_gbmep_train[index], stats.uniform.cdf)
     ks_gbmep_full_train[index] = stats.kstest(p_gbmep_full_train[index], stats.uniform.cdf)
     # Calculate KS statistic for test set
-    if len(p_poisson_test) > 0:
+    if len(p_poisson_test[index]) > 0:
         ks_poisson_test[index] = stats.kstest(p_poisson_test[index], stats.uniform.cdf)
         ks_mep_test[index] = stats.kstest(p_mep_test[index], stats.uniform.cdf)
         ks_sep_test[index] = stats.kstest(p_sep_test[index], stats.uniform.cdf)
@@ -139,7 +146,7 @@ for index in G.nodes:
     cvm_gbmep_train[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_train[index], cdf=stats.uniform.cdf).statistic / G.N[index])
     cvm_gbmep_full_train[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_full_train[index], cdf=stats.uniform.cdf).statistic / G.N[index])
     # Calculate Cramér-von Mises for test set
-    if len(p_poisson_test) > 0:
+    if len(p_poisson_test[index]) > 0:
         cvm_poisson_test[index] = np.sqrt(stats.cramervonmises(rvs=p_poisson_test[index], cdf=stats.uniform.cdf).statistic / (len(start_times[index])-G.N[index]))
         cvm_mep_test[index] = np.sqrt(stats.cramervonmises(rvs=p_mep_test[index], cdf=stats.uniform.cdf).statistic / (len(start_times[index])-G.N[index]))
         cvm_sep_test[index] = np.sqrt(stats.cramervonmises(rvs=p_sep_test[index], cdf=stats.uniform.cdf).statistic / (len(start_times[index])-G.N[index]))

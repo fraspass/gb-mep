@@ -106,19 +106,19 @@ ax[0,0].set_title('Poisson')
 ax[0,1].set_title('MEP')
 ax[0,2].set_title('SEP')
 ax[1,0].set_title('SMEP')
-ax[1,1].set_title('GB-MEP (start times only)')
+ax[1,1].set_title('SpMEP')
 ax[1,2].set_title('GB-MEP')
 
 # Combine all the operations and display 
-plt.savefig('plots/quantiles_train_start.pdf',bbox_inches='tight', pad_inches=0.1)
-plt.show(block = False) 
+plt.savefig('plots/quantiles_train_start.pdf', bbox_inches='tight', pad_inches=0.1)
+plt.show(block=False) 
 
 # Combine the data into a list for plotting
 ks_train_combined = [ks_train_tot['poisson'], ks_train_tot['mep'], ks_train_tot['sep'], ks_train_tot['gbmep_start'], ks_train_tot['smep'], ks_train_tot['gbmep_full']]
 # Create labels for the boxplots
-labels = ['Poisson', 'MEP', 'SEP', 'GB-MEP (start times only)', 'SMEP', 'GB-MEP']
+labels = ['Poisson', 'MEP', 'SEP', 'SpMEP', 'SMEP', 'GB-MEP']
 # Create a figure and axis
-fig, ax = plt.subplots(figsize=(6, 4))
+fig, ax = plt.subplots(figsize=(6,4))
 # Create side-by-side boxplots
 ax.boxplot(ks_train_combined, labels=labels, showfliers=False, patch_artist=True, boxprops={'facecolor': 'lightgray'}, medianprops={'color': 'black'})
 # Set axis labels and a title
@@ -126,15 +126,16 @@ ax.set_xlabel('Model')
 ax.set_ylabel('KS scores')
 ax.grid(axis='y', linestyle='--', alpha=0.7)
 # Show the plot
-plt.savefig('plots/ks_train_start.pdf',bbox_inches='tight', pad_inches=0.1)
-plt.show(block = False)
+ax.set_ylim(-0.01,0.36)
+plt.savefig('plots/ks_train_start.pdf', bbox_inches='tight', pad_inches=0.1)
+plt.show(block=False)
 
 # Combine the data into a list for plotting
 cvm_train_combined = [cvm_train_tot['poisson'], cvm_train_tot['mep'], cvm_train_tot['sep'], cvm_train_tot['gbmep_start'], cvm_train_tot['smep'], cvm_train_tot['gbmep']]
 # Create labels for the boxplots
-labels = ['Poisson', 'MEP', 'SEP', 'GB-MEP (start times only)', 'SMEP', 'GB-MEP']
+labels = ['Poisson', 'MEP', 'SEP', 'SpMEP', 'SMEP', 'GB-MEP']
 # Create a figure and axis
-fig, ax = plt.subplots(figsize=(6, 4))
+fig, ax = plt.subplots(figsize=(6,4))
 # Create side-by-side boxplots
 ax.boxplot(cvm_train_combined, labels=labels, showfliers=False, patch_artist=True, boxprops={'facecolor': 'lightgray'}, medianprops={'color': 'black'})
 # Set axis labels and a title
@@ -142,8 +143,8 @@ ax.set_xlabel('Model')
 ax.set_ylabel('nCVM scores')
 ax.grid(axis='y', linestyle='--', alpha=0.7)
 # Show the plot
-plt.savefig('plots/cvm_train_start.pdf',bbox_inches='tight', pad_inches=0.1)
-plt.show()
+plt.savefig('plots/cvm_train_start.pdf', bbox_inches='tight', pad_inches=0.1)
+plt.show(block=False)
 
 # Initialise the subplot function using number of rows and columns 
 fig, ax = plt.subplots(2,3, figsize=(12,8))
@@ -179,19 +180,19 @@ ax[0,0].set_title('Poisson')
 ax[0,1].set_title('MEP')
 ax[0,2].set_title('SEP')
 ax[1,0].set_title('SMEP')
-ax[1,1].set_title('GB-MEP (start times only)')
+ax[1,1].set_title('SpMEP')
 ax[1,2].set_title('GB-MEP')
 
 # Combine all the operations and display
-plt.savefig('plots/quantiles_test_start.pdf',bbox_inches='tight', pad_inches=0.1)
-plt.show(block = False) 
+plt.savefig('plots/quantiles_test_start.pdf', bbox_inches='tight', pad_inches=0.1)
+plt.show(block=False) 
 
 # Combine the data into a list for plotting
 ks_test_combined = [ks_test_tot['poisson'], ks_test_tot['mep'], ks_test_tot['sep'], ks_test_tot['gbmep_start'], ks_test_tot['smep'], ks_test_tot['gbmep_full']]
 # Create labels for the boxplots
-labels = ['Poisson', 'MEP', 'SEP', 'GB-MEP (start times only)', 'SMEP', 'GB-MEP']
+labels = ['Poisson', 'MEP', 'SEP', 'SpMEP', 'SMEP', 'GB-MEP']
 # Create a figure and axis
-fig, ax = plt.subplots(figsize=(6, 4))
+fig, ax = plt.subplots(figsize=(6,4))
 # Create side-by-side boxplots
 ax.boxplot(ks_test_combined, labels=labels, showfliers=False, patch_artist=True, boxprops={'facecolor': 'lightgray'}, medianprops={'color': 'black'})
 # Set axis labels and a title
@@ -199,15 +200,16 @@ ax.set_xlabel('Model')
 ax.set_ylabel('KS scores')
 ax.grid(axis='y', linestyle='--', alpha=0.7)
 # Show the plot
-plt.savefig('plots/ks_test_start.pdf',bbox_inches='tight', pad_inches=0.1)
-plt.show(block = False)
+ax.set_ylim(-0.01,0.36)
+plt.savefig('plots/ks_test_start.pdf', bbox_inches='tight', pad_inches=0.1)
+plt.show(block=False)
 
 # Combine the data into a list for plotting
 cvm_test_combined = [cvm_test_tot['poisson'], cvm_test_tot['mep'], cvm_test_tot['sep'], cvm_test_tot['gbmep_start'], cvm_test_tot['smep'], cvm_test_tot['gbmep_full']]
 # Create labels for the boxplots
-labels = ['Poisson', 'MEP', 'SEP', 'GB-MEP (start times only)', 'SMEP', 'GB-MEP']
+labels = ['Poisson', 'MEP', 'SEP', 'SpMEP', 'SMEP', 'GB-MEP']
 # Create a figure and axis
-fig, ax = plt.subplots(figsize=(6, 4))
+fig, ax = plt.subplots(figsize=(6,4))
 # Create side-by-side boxplots
 ax.boxplot(cvm_test_combined, labels=labels, showfliers=False, patch_artist=True, boxprops={'facecolor': 'lightgray'}, medianprops={'color': 'black'})
 # Set axis labels and a title
@@ -215,5 +217,5 @@ ax.set_xlabel('Model')
 ax.set_ylabel('KS scores')
 ax.grid(axis='y', linestyle='--', alpha=0.7)
 # Show the plot
-plt.savefig('plots/ks_test_start.pdf',bbox_inches='tight', pad_inches=0.1)
-plt.show(block = False)
+plt.savefig('plots/cvm_test_start.pdf', bbox_inches='tight', pad_inches=0.1)
+plt.show(block=False)

@@ -1,3 +1,7 @@
+plots/tikz/process.aux
+plots/tikz/process.log
+plots/tikz/process.pdf
+plots/tikz/process.synctex.gz
 scripts/*_end.*
 results/*_end
 results/*_end.*

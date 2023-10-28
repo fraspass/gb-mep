@@ -19,6 +19,7 @@ import gb_mep
 A demo on how to use the library with the Santander Cycles data can be found in `notebooks/Santander_Cycles.ipynb` and `notebooks/Santander_Cycles_2020.ipynb`.
 
 ## Santander Cycles data: downloading and preprocessing
+
 The Santander Cycles data can be downloaded from the [TfL Cycling Data Repository](https://cycling.data.tfl.gov.uk/) (see the [terms of service](https://tfl.gov.uk/corporate/terms-and-conditions/transport-data-service)) by navigating to the directory `data` in this repository, and running the script `get_data.sh` as detailed below. The files will be stored in `.csv` files in two directories: `data/training` and `data/test`. 
 ```
 cd data
@@ -43,3 +44,29 @@ bash get_data.sh
 python3 data_processing.py
 ```
 The output of the script consists in files stored in a directory `santander_summaries` and its subdirectory `santander_summaries_preprocessed`. 
+
+## Reproducing the results in the paper
+
+To reproduce the results and plots in the paper, the *Bash* and *Python* scripts in `scripts` could be run. Note that these operations are computationally expensive, so it is recommended to run those on a remote server, not on a personal laptop. First, it is necessary to run the scripts `run_benchmarks.py`, which calculates parameter estimates for the Poisson, SEP, MEP and SMEP models, which are subsequently used to initialise SpMEP and GB-MEP to aid convergence:
+```
+python3 scripts/run_benchmarks.py &
+``` 
+Next, the *Bash* scripts `scripts/run_gbmep_start.sh`, `scripts/run_gbmep.sh` and `scripts/run_gbmep_full.sh` should be run to obtain the results of SpMEP, SpSMEP (a variation of SpMEP which includes the end times of events at the same station - this is not reported in the paper since it does not improve the results of SMEP, and it has worse performance than GB-MEP), and GB-MEP:
+```
+bash scripts/run_gbmep_start.sh &
+bash scripts/run_gbmep.sh &
+bash scripts/run_gbmep_full.sh &
+``` 
+Note that the above scripts launch 16 processes each (where each process fits the corresponding model on approximately 50 stations). Therefore, it is highly recommended to run these scripts one-by-one on a remote server.
+
+After all scripts have been run, the results can be postprocessed with the following command:
+```
+python3 scripts/process_results_gbmep.py &
+``` 
+This script creates combined results files in `results/res_qq_start`, which can then be used for producing the plots reported in the paper.
+
+Most plots and results can be obtained via the following command, after the files in `results/res_qq_start` are available: 
+```
+python3 scripts/plot_results.py &
+``` 
+Additional plots can be obtained from the Notebook `plots/Santander_Cycles_Plots.ipynb`.

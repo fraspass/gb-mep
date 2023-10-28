@@ -127,6 +127,7 @@ ax.set_ylabel('KS scores')
 ax.grid(axis='y', linestyle='--', alpha=0.7)
 # Show the plot
 ax.set_ylim(-0.01,0.36)
+ax.axhline(y=0, color='black', linewidth=0.5)
 plt.savefig('plots/ks_train_start.pdf', bbox_inches='tight', pad_inches=0.1)
 plt.show(block=False)
 
@@ -201,6 +202,7 @@ ax.set_ylabel('KS scores')
 ax.grid(axis='y', linestyle='--', alpha=0.7)
 # Show the plot
 ax.set_ylim(-0.01,0.36)
+ax.axhline(y=0, color='black', linewidth=0.5)
 plt.savefig('plots/ks_test_start.pdf', bbox_inches='tight', pad_inches=0.1)
 plt.show(block=False)
 

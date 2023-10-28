@@ -110,13 +110,13 @@ for u in range(2):
     for v in range(3):
         ax[u,v].plot(x,x, c='black', ls='dotted', linewidth=1)
 
-ax[0,0].plot(x, np.percentile(a=y_train_tot['poisson'], q=x*100), linewidth=1, c='black', label='All stations')
-ax[0,1].plot(x, np.percentile(a=y_train_tot['mep'], q=x*100), linewidth=1, c='black')
-ax[0,2].plot(x, np.percentile(a=y_train_tot['sep'], q=x*100), linewidth=1, c='black')
-ax[1,0].plot(x, np.percentile(a=y_train_tot['smep'], q=x*100), linewidth=1, c='black')
-ax[1,1].plot(x, np.percentile(a=y_train_tot['gbmep_start'], q=x*100), linewidth=1, c='black')
-## ax[1,2].plot(x, np.percentile(a=y_train_tot['gbmep'], q=x*100), linewidth=1, c='black')
-ax[1,2].plot(x, np.percentile(a=y_train_tot['gbmep_full'], q=x*100), linewidth=1, c='black')
+ax[0,0].plot(x, np.percentile(a=pv_train_tot['poisson'], q=x*100), linewidth=1, c='black', label='All stations')
+ax[0,1].plot(x, np.percentile(a=pv_train_tot['mep'], q=x*100), linewidth=1, c='black')
+ax[0,2].plot(x, np.percentile(a=pv_train_tot['sep'], q=x*100), linewidth=1, c='black')
+ax[1,0].plot(x, np.percentile(a=pv_train_tot['smep'], q=x*100), linewidth=1, c='black')
+ax[1,1].plot(x, np.percentile(a=pv_train_tot['gbmep_start'], q=x*100), linewidth=1, c='black')
+## ax[1,2].plot(x, np.percentile(a=pv_train_tot['gbmep'], q=x*100), linewidth=1, c='black')
+ax[1,2].plot(x, np.percentile(a=pv_train_tot['gbmep_full'], q=x*100), linewidth=1, c='black')
 
 for u in [0,1]:
     ax[u,0].set_ylabel('Observed quantiles')
@@ -189,13 +189,13 @@ for u in range(2):
     for v in range(3):
         ax[u,v].plot(x,x, c='black', ls='dotted', linewidth=1)
 
-ax[0,0].plot(x, np.percentile(a=y_test_tot['poisson'], q=x*100), linewidth=1, c='black', label='All stations')
-ax[0,1].plot(x, np.percentile(a=y_test_tot['mep'], q=x*100), linewidth=1, c='black')
-ax[0,2].plot(x, np.percentile(a=y_test_tot['sep'], q=x*100), linewidth=1, c='black')
-ax[1,0].plot(x, np.percentile(a=y_test_tot['smep'], q=x*100), linewidth=1, c='black')
-ax[1,1].plot(x, np.percentile(a=y_test_tot['gbmep_start'], q=x*100), linewidth=1, c='black')
-## ax[1,2].plot(x, np.percentile(a=y_test_tot['gbmep'], q=x*100), linewidth=1, c='black')
-ax[1,2].plot(x, np.percentile(a=y_test_tot['gbmep_full'], q=x*100), linewidth=1, c='black')
+ax[0,0].plot(x, np.percentile(a=pv_test_tot['poisson'], q=x*100), linewidth=1, c='black', label='All stations')
+ax[0,1].plot(x, np.percentile(a=pv_test_tot['mep'], q=x*100), linewidth=1, c='black')
+ax[0,2].plot(x, np.percentile(a=pv_test_tot['sep'], q=x*100), linewidth=1, c='black')
+ax[1,0].plot(x, np.percentile(a=pv_test_tot['smep'], q=x*100), linewidth=1, c='black')
+ax[1,1].plot(x, np.percentile(a=pv_test_tot['gbmep_start'], q=x*100), linewidth=1, c='black')
+## ax[1,2].plot(x, np.percentile(a=pv_test_tot['gbmep'], q=x*100), linewidth=1, c='black')
+ax[1,2].plot(x, np.percentile(a=pv_test_tot['gbmep_full'], q=x*100), linewidth=1, c='black')
 
 for u in [0,1]:
     ax[u,0].set_ylabel('Observed quantiles')

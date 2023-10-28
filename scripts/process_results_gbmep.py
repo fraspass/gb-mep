@@ -94,7 +94,7 @@ for index in G.nodes:
     # p-values for GB-MEP (full)
     pp = gb_mep.transform_parameters(res_gbmep_full[index].x)
     p_gbmep_full_train, p_gbmep_full_test = G.pvals_gbmep(params=pp, node_index=index, subset_nodes=res_gbmep_full[index].subset_nodes, start_times=start_times, end_times=end_times, test_split=True, validation_split=False)
-    # Caclulate observed percentiles for training set
+    # Calculate observed percentiles for training set
     y_poisson_train[index] = np.percentile(a=p_poisson_train, q=x*100)
     y_mep_train[index] = np.percentile(a=p_mep_train, q=x*100)
     y_sep_train[index] = np.percentile(a=p_sep_train, q=x*100)
@@ -102,7 +102,7 @@ for index in G.nodes:
     y_gbmep_start_train[index] = np.percentile(a=p_gbmep_start_train, q=x*100)
     y_gbmep_train[index] = np.percentile(a=p_gbmep_train, q=x*100)
     y_gbmep_full_train[index] = np.percentile(a=p_gbmep_full_train, q=x*100)
-    # Caclulate observed percentiles for test set
+    # Calculate observed percentiles for test set
     if len(p_poisson_test) > 0:
         y_poisson_test[index] = np.percentile(a=p_poisson_test, q=x*100)
         y_mep_test[index] = np.percentile(a=p_mep_test, q=x*100)
@@ -147,10 +147,11 @@ for index in G.nodes:
         cvm_gbmep_full_test[index] = np.sqrt(stats.cramervonmises(rvs=p_gbmep_full_test, cdf=stats.uniform.cdf).statistic / (len(start_times[index])-G.N[index]))
 
 ## Save the results
-y_train = {}; ks_train = {}; cvm_train = {}
-y_validation = {}; ks_validation = {}; cvm_validation = {}
-y_test = {}; ks_test = {}; cvm_test = {}
+p_train = {}; y_train = {}; ks_train = {}; cvm_train = {}
+p_test = {}; y_test = {}; ks_test = {}; cvm_test = {}
 # Training
+p_train['poisson'] = p_poisson_train; p_train['mep'] = p_mep_train; p_train['sep'] = p_sep_train; p_train['smep'] = p_smep_train
+p_train['gbmep_start'] = p_gbmep_start_train; p_train['gbmep'] = p_gbmep_train; p_train['gbmep_full'] = p_gbmep_full_train
 y_train['poisson'] = y_poisson_train; y_train['mep'] = y_mep_train; y_train['sep'] = y_sep_train; y_train['smep'] = y_smep_train
 y_train['gbmep_start'] = y_gbmep_start_train; y_train['gbmep'] = y_gbmep_train; y_train['gbmep_full'] = y_gbmep_full_train
 ks_train['poisson'] = ks_poisson_train; ks_train['mep'] = ks_mep_train; ks_train['sep'] = ks_sep_train; ks_train['smep'] = ks_smep_train
@@ -158,6 +159,8 @@ ks_train['gbmep_start'] = ks_gbmep_start_train; ks_train['gbmep'] = ks_gbmep_tra
 cvm_train['poisson'] = cvm_poisson_train; cvm_train['mep'] = cvm_mep_train; cvm_train['sep'] = cvm_sep_train; cvm_train['smep'] = cvm_smep_train
 cvm_train['gbmep_start'] = cvm_gbmep_start_train; cvm_train['gbmep'] = cvm_gbmep_train; cvm_train['gbmep_full'] = cvm_gbmep_full_train
 # Test
+p_test['poisson'] = p_poisson_test; p_test['mep'] = p_mep_test; p_test['sep'] = p_sep_test; p_test['smep'] = p_smep_test
+p_test['gbmep_start'] = p_gbmep_start_test; p_test['gbmep'] = p_gbmep_test; p_test['gbmep_full'] = p_gbmep_full_test
 y_test['poisson'] = y_poisson_test; y_test['mep'] = y_mep_test; y_test['sep'] = y_sep_test; y_test['smep'] = y_smep_test
 y_test['gbmep_start'] = y_gbmep_start_test; y_test['gbmep'] = y_gbmep_test; y_test['gbmep_full'] = y_gbmep_full_test
 ks_test['poisson'] = ks_poisson_test; ks_test['mep'] = ks_mep_test; ks_test['sep'] = ks_sep_test; ks_test['smep'] = ks_smep_test
@@ -170,12 +173,16 @@ if not os.path.exists('results/res_qq_start'):
    os.makedirs('results/res_qq_start')
 
 ## Save as .pkl files
+with open('results/res_qq_start/pv_train.pkl', 'wb') as f:
+    pickle.dump(p_train, f)
 with open('results/res_qq_start/y_train.pkl', 'wb') as f:
     pickle.dump(y_train, f)
 with open('results/res_qq_start/ks_train.pkl', 'wb') as f:
     pickle.dump(ks_train, f)
 with open('results/res_qq_start/cvm_train.pkl', 'wb') as f:
     pickle.dump(cvm_train, f)
+with open('results/res_qq_start/pv_test.pkl', 'wb') as f:
+    pickle.dump(p_test, f)
 with open('results/res_qq_start/y_test.pkl', 'wb') as f:
     pickle.dump(y_test, f)
 with open('results/res_qq_start/ks_test.pkl', 'wb') as f:

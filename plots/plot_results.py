@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 import pickle
+import scipy.stats as stats
 
 ## Import library gb_mep
 import gb_mep
@@ -68,6 +69,10 @@ for node in y_test['poisson']:
         ks_test_tot[model] += [ks_test[model][node].statistic]
         cvm_test_tot[model] += [cvm_test[model][node]]
 
+print('Training set - KS scores for all stations')
+for model in y_train_tot:
+    print(stats.kstest(y_train_tot[model], stats.uniform.cdf).statistic)
+
 ks_test_array = np.zeros((len(ks_test_tot['poisson']), 7))
 for k, model in enumerate(ks_test_tot):
     ks_test_array[:,k] = ks_test_tot[model]
@@ -76,7 +81,11 @@ for k, model in enumerate(ks_test_tot):
 fig, ax = plt.subplots(2,3, figsize=(12,8))
 
 for node in y_test['poisson']:
-    ax[0,0].plot(x, y_train['poisson'][node], c='lightgray', linewidth=.5) 
+    if node == 1:
+        ax[0,0].plot(x, y_train['poisson'][node], c='lightgray', linewidth=.5, label='Single station')
+    else:
+        ax[0,0].plot(x, y_train['poisson'][node], c='lightgray', linewidth=.5)
+    ax[0,0].plot(x, y_train['poisson'][node], c='lightgray', linewidth=.5)
     ax[0,1].plot(x, y_train['mep'][node], c='lightgray', linewidth=.5)
     ax[0,2].plot(x, y_train['sep'][node], c='lightgray', linewidth=.5) 
     ax[1,0].plot(x, y_train['smep'][node], c='lightgray', linewidth=.5)
@@ -88,7 +97,7 @@ for u in range(2):
     for v in range(3):
         ax[u,v].plot(x,x, c='black', ls='dotted', linewidth=1)
 
-ax[0,0].plot(x, np.percentile(a=y_train_tot['poisson'], q=x*100), linewidth=1, c='black')
+ax[0,0].plot(x, np.percentile(a=y_train_tot['poisson'], q=x*100), linewidth=1, c='black', label='All stations')
 ax[0,1].plot(x, np.percentile(a=y_train_tot['mep'], q=x*100), linewidth=1, c='black')
 ax[0,2].plot(x, np.percentile(a=y_train_tot['sep'], q=x*100), linewidth=1, c='black')
 ax[1,0].plot(x, np.percentile(a=y_train_tot['smep'], q=x*100), linewidth=1, c='black')
@@ -108,6 +117,7 @@ ax[0,2].set_title('SEP')
 ax[1,0].set_title('SMEP')
 ax[1,1].set_title('SpMEP')
 ax[1,2].set_title('GB-MEP')
+ax[0,0].legend()
 
 # Combine all the operations and display 
 plt.savefig('plots/quantiles_train_start.pdf', bbox_inches='tight', pad_inches=0.1)
@@ -151,7 +161,10 @@ plt.show(block=False)
 fig, ax = plt.subplots(2,3, figsize=(12,8))
 
 for node in y_test['poisson']:
-    ax[0,0].plot(x, y_test['poisson'][node], c='lightgray', linewidth=.5) 
+    if node == 1:
+        ax[0,0].plot(x, y_test['poisson'][node], c='lightgray', linewidth=.5, label='Single station')
+    else:
+        ax[0,0].plot(x, y_test['poisson'][node], c='lightgray', linewidth=.5) 
     ax[0,1].plot(x, y_test['mep'][node], c='lightgray', linewidth=.5)
     ax[0,2].plot(x, y_test['sep'][node], c='lightgray', linewidth=.5) 
     ax[1,0].plot(x, y_test['smep'][node], c='lightgray', linewidth=.5)
@@ -163,7 +176,7 @@ for u in range(2):
     for v in range(3):
         ax[u,v].plot(x,x, c='black', ls='dotted', linewidth=1)
 
-ax[0,0].plot(x, np.percentile(a=y_test_tot['poisson'], q=x*100), linewidth=1, c='black')
+ax[0,0].plot(x, np.percentile(a=y_test_tot['poisson'], q=x*100), linewidth=1, c='black', label='All stations')
 ax[0,1].plot(x, np.percentile(a=y_test_tot['mep'], q=x*100), linewidth=1, c='black')
 ax[0,2].plot(x, np.percentile(a=y_test_tot['sep'], q=x*100), linewidth=1, c='black')
 ax[1,0].plot(x, np.percentile(a=y_test_tot['smep'], q=x*100), linewidth=1, c='black')
@@ -183,6 +196,7 @@ ax[0,2].set_title('SEP')
 ax[1,0].set_title('SMEP')
 ax[1,1].set_title('SpMEP')
 ax[1,2].set_title('GB-MEP')
+ax[0,0].legend()
 
 # Combine all the operations and display
 plt.savefig('plots/quantiles_test_start.pdf', bbox_inches='tight', pad_inches=0.1)

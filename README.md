@@ -1,6 +1,6 @@
 # GB-MEP: Graph-based mutually exciting point processes
 
-This repository contains the Python library `gb_mep`, which supports the paper *"Graph-based mutually exciting point processes for modelling event times in docked bike-sharing systems"* by Francesco Sanna Passino, Yining Che, and Carlos Cardoso Correia Perello. The repository contains the following directories:
+This repository contains the Python library `gb_mep`, which supports the paper *"Graph-based mutually exciting point processes for modelling event times in docked bike-sharing systems"* by Francesco Sanna Passino, Yining Che, and Carlos Cardoso Correia Perello ([arXiv preprint](https://arxiv.org/abs/2311.00595)). The repository contains the following directories:
 
 * `lib` contains the _Python_ library, with code to implement and fit GB-MEPs to graphs of point processes.
 * `notebooks` contains Jupyter notebooks with examples on how to use the `gb_mep` library.
